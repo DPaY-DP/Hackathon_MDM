@@ -1,0 +1,68 @@
+{
+  "ignored_sheets": [
+    "Uebersicht",
+    "Feldlegende"
+  ],
+  "default_department": "Datenmanagement (MDM)",
+  "department_by_file": {
+    "Produktdaten_HubSpot": "Vertrieb / CRM",
+    "Produktdaten_Salesforce": "Vertrieb / CRM",
+    "Service_Salesforce": "Service / Kundendienst",
+    "Stammdaten_MARC": "Materialwirtschaft / SAP"
+  },
+  "priority_by_issue": {
+    "Fehlender Wert": "kritisch",
+    "Fehlende Spalte": "kritisch",
+    "Doppelter Schlüssel": "kritisch",
+    "Ungültiges Datum": "kritisch",
+    "Unbekannter Wert": "kritisch",
+    "Schreibvariante": "ignorieren",
+    "Überflüssige Leerzeichen": "ignorieren"
+  },
+  "classification": {
+    "issue_type_class": {
+      "Fehlender Wert": "KEY",
+      "Fehlende Spalte": "KEY",
+      "Doppelter Schlüssel": "DUP",
+      "Ungültiges Datum": "FORMAT",
+      "Unbekannter Wert": "DOMAIN",
+      "Schreibvariante": "FORMAT",
+      "Überflüssige Leerzeichen": "FORMAT"
+    },
+    "priority_by_issue": {
+      "Doppelter Schlüssel": "kritisch",
+      "Fehlender Wert": "kritisch",
+      "Fehlende Spalte": "kritisch",
+      "Ungültiges Datum": "kritisch",
+      "Unbekannter Wert": "kritisch",
+      "Schreibvariante": "ignorieren",
+      "Überflüssige Leerzeichen": "ignorieren"
+    },
+    "priority_by_severity": {
+      "hoch": "kritisch",
+      "mittel": "kritisch",
+      "mittel–hoch": "kritisch",
+      "niedrig": "ignorieren",
+      "niedrig–mittel": "ignorieren"
+    },
+    "object_aliases": {
+      "Produkte (FERT)": ["MARC-FERT"],
+      "Ersatzteile (ERSA)": ["MARC-ERSA"],
+      "MARA": ["MARA"],
+      "Products": ["Products"],
+      "Price Books": ["Price Books"],
+      "Price Book Items": ["Price Book Items"],
+      "Product2": ["Product2"],
+      "Pricebook2": ["Pricebook2"],
+      "PricebookEntry": ["PricebookEntry"],
+      "Account": ["Account"],
+      "Contact": ["Contact"],
+      "Asset": ["Asset"],
+      "WorkOrder": ["WorkOrder"]
+    },
+    "fallback_id": "GEN-001",
+    "overrides": {}
+  },
+  "required_columns": {},
+  "allowed_values": {}
+}
