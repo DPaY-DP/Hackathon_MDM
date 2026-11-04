@@ -39,6 +39,161 @@
     "Schreibvariante": "ignorieren",
     "Überflüssige Leerzeichen": "ignorieren"
   },
-  "required_columns": {},
-  "allowed_values": {}
+  "classification": {
+    "issue_type_class": {
+      "Fehlender Wert": "KEY",
+      "Fehlende Spalte": "KEY",
+      "Doppelter Schlüssel": "DUP",
+      "Ungültiges Datum": "FORMAT",
+      "Unbekannter Wert": "DOMAIN",
+      "Schreibvariante": "FORMAT",
+      "Überflüssige Leerzeichen": "FORMAT"
+    },
+    "priority_by_issue": {
+      "Doppelter Schlüssel": "kritisch",
+      "Fehlender Wert": "kritisch",
+      "Fehlende Spalte": "kritisch",
+      "Ungültiges Datum": "kritisch",
+      "Unbekannter Wert": "kritisch",
+      "Schreibvariante": "ignorieren",
+      "Überflüssige Leerzeichen": "ignorieren"
+    },
+    "priority_by_severity": {
+      "hoch": "kritisch",
+      "mittel": "kritisch",
+      "mittel–hoch": "kritisch",
+      "niedrig": "ignorieren",
+      "niedrig–mittel": "ignorieren"
+    },
+    "object_aliases": {
+      "Produkte (FERT)": ["MARC-FERT"],
+      "Ersatzteile (ERSA)": ["MARC-ERSA"],
+      "Produkte_FERT": ["MARC-FERT", "Produkte_FERT", "Produkte (FERT)"],
+      "Ersatzteile_ERSA": ["MARC-ERSA", "Ersatzteile_ERSA", "Ersatzteile (ERSA)"],
+      "MARA": ["MARA"],
+      "Products": ["Products"],
+      "Price Books": ["Price Books"],
+      "Price_Books": ["Price Books", "Price_Books"],
+      "Price Book Items": ["Price Book Items"],
+      "Price_Book_Items": ["Price Book Items", "Price_Book_Items"],
+      "Product2": ["Product2"],
+      "Pricebook2": ["Pricebook2"],
+      "PricebookEntry": ["PricebookEntry"],
+      "Account": ["Account"],
+      "Contact": ["Contact"],
+      "Asset": ["Asset"],
+      "WorkOrder": ["WorkOrder"]
+    },
+    "fallback_id": null,
+    "overrides": {}
+  },
+  "required_columns": {
+    "Produkte_FERT": [
+      "MATNR", "MAKTX", "MTART", "WERKS", "MANDT", "MMSTA", "MAABC", "DISMM", "STAWN", "HERKL"
+    ],
+    "Ersatzteile_ERSA": [
+      "MATNR", "MAKTX", "MTART", "WERKS", "MANDT", "MMSTA", "MAABC", "DISMM", "HERKL"
+    ],
+    "MARA": [
+      "MATNR", "MAKTX", "MTART", "MATKL", "SPART", "MEINS"
+    ],
+    "Product2": [
+      "Id", "Name", "ProductCode", "IsActive", "ATN_SAP_Materialnummer__c"
+    ],
+    "PricebookEntry": [
+      "Id", "Product2Id", "Pricebook2Id", "UnitPrice"
+    ],
+    "Products": [
+      "hs_object_id", "name", "hs_sku", "hs_status", "atn_sap_materialnummer"
+    ],
+    "Price_Book_Items": [
+      "hs_object_id", "price_book_id", "hs_associated_product_id", "hs_price_eur"
+    ],
+    "Account": [
+      "Id", "Name", "BillingCountry"
+    ],
+    "Contact": [
+      "Id", "LastName", "AccountId"
+    ],
+    "Asset": [
+      "Id", "SerialNumber", "AccountId", "Product2Id"
+    ],
+    "WorkOrder": [
+      "Id", "WorkOrderNumber", "AccountId", "Status"
+    ]
+  },
+  "allowed_values": {
+    "Produkte_FERT": {
+      "MANDT": ["100"],
+      "WERKS": ["1000", "1100"],
+      "MTART": ["FERT"],
+      "MEINS": ["ST"],
+      "LVORM": ["X"],
+      "MMSTA": ["01", "02"],
+      "MAABC": ["A", "B", "C"],
+      "DISMM": ["PD"],
+      "DISLS": ["EX", "FX", "HB", "WB", "MB"],
+      "BESKZ": ["E", "F", "X"],
+      "HERKL": ["AT", "NL", "DE", "CN", "PL", "US", "CZ", "CH", "IN", "JP"],
+      "PERKZ": ["M", "W", "T", "P"]
+    },
+    "Ersatzteile_ERSA": {
+      "MANDT": ["100"],
+      "WERKS": ["2000", "2100", "2200"],
+      "MTART": ["ERSA"],
+      "MEINS": ["ST", "M"],
+      "LVORM": ["X"],
+      "MMSTA": ["01", "02"],
+      "MAABC": ["A", "B", "C"],
+      "DISMM": ["PD", "VB", "VM", "ND"],
+      "DISLS": ["EX", "FX", "HB", "WB", "MB"],
+      "BESKZ": ["E", "F", "X"],
+      "HERKL": ["AT", "NL", "DE", "CN", "PL", "US", "CZ", "CH", "IN", "JP"]
+    },
+    "MARA": {
+      "MANDT": ["100"],
+      "MTART": ["FERT", "ERSA"],
+      "MBRSH": ["M"],
+      "SPART": ["10", "20", "90"],
+      "MEINS": ["ST", "M"],
+      "BSTME": ["ST", "M", "KG"],
+      "GEWEI": ["KG", "G"],
+      "VOLEH": ["L", "M3", "CM3"],
+      "MSTAE": ["01", "02"],
+      "KZREV": ["X"],
+      "NUMTP": ["HE"]
+    },
+    "Product2": {
+      "IsActive": ["True", "False"],
+      "IsArchived": ["True", "False"],
+      "QuantityUnitOfMeasure": ["Stueck"]
+    },
+    "PricebookEntry": {
+      "IsActive": ["True", "False"],
+      "UseStandardPrice": ["True", "False"],
+      "CurrencyIsoCode": ["EUR"]
+    },
+    "Products": {
+      "hs_status": ["ACTIVE", "INACTIVE"],
+      "hs_pricing_model": ["FLAT"],
+      "hs_product_type": ["INVENTORY", "NON_INVENTORY", "SERVICE"]
+    },
+    "Price_Books": {
+      "hs_status": ["ACTIVE", "INACTIVE"],
+      "hs_supported_currencies": ["EUR"],
+      "archived": ["True", "False"]
+    },
+    "Price_Book_Items": {
+      "hs_status": ["ACTIVE", "INACTIVE"],
+      "hs_pricing_model": ["FLAT"],
+      "hs_product_type": ["INVENTORY", "NON_INVENTORY", "SERVICE"]
+    },
+    "Asset": {
+      "Status": ["Shipped", "Installed", "Registered", "Obsolete"]
+    },
+    "WorkOrder": {
+      "Status": ["New", "In Progress", "Completed", "Cannot Complete", "Closed"],
+      "Priority": ["Low", "Medium", "High", "Critical"]
+    }
+  }
 }

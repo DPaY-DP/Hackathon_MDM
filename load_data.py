@@ -25,6 +25,9 @@ SF_PRODUCT_FILE = DATA_DIR / "AgroTechNova_Produktdaten_Salesforce_dirty_1.xlsx"
 SF_SERVICE_FILE = DATA_DIR / "AgroTechNova_Service_Salesforce_dirty_1.xlsx"
 HS_FILE = DATA_DIR / "AgroTechNova_Produktdaten_HubSpot_dirty_1.xlsx"
 
+# Codes mit führenden Nullen als Text lesen (Excel-Zahlen würden "01" → 1 machen)
+LEADING_ZERO_COLUMNS = frozenset({"MANDT", "WERKS", "MMSTA", "SPART", "MSTAE"})
+
 # Reihenfolge: Eltern vor Kindern (für dokumentierte FKs)
 TABLE_SOURCES: list[tuple[str, Path, str, list[str]]] = [
     # table, file, sheet, preferred key columns (for cleanup)
@@ -68,7 +71,20 @@ def find_header_row(file_path: Path, sheet_name: str) -> int:
 
 def read_sheet(file_path: Path, sheet_name: str) -> pd.DataFrame:
     header_row = find_header_row(file_path, sheet_name)
-    data = pd.read_excel(file_path, sheet_name=sheet_name, header=header_row)
+    header_only = pd.read_excel(
+        file_path, sheet_name=sheet_name, header=header_row, nrows=0
+    )
+    dtype = {
+        str(column).strip(): str
+        for column in header_only.columns
+        if str(column).strip() in LEADING_ZERO_COLUMNS
+    }
+    data = pd.read_excel(
+        file_path,
+        sheet_name=sheet_name,
+        header=header_row,
+        dtype=dtype or None,
+    )
     data = data.dropna(axis=1, how="all").copy()
     data.columns = [
         str(column).strip()
@@ -81,9 +97,18 @@ def read_sheet(file_path: Path, sheet_name: str) -> pd.DataFrame:
     return data
 
 
-def cell_to_db(value: Any) -> Any:
+def cell_to_db(value: Any, *, preserve_text: bool = False) -> Any:
     if pd.isna(value):
         return None
+    if preserve_text:
+        # Bereits als Text gelesen (dtype=str) — führende Nullen behalten
+        text = str(value).strip()
+        if text == "" or text.casefold() == "nan":
+            return None
+        # pandas dtype=str kann Zahlen als "1000.0" liefern
+        if re_fullmatch_int_float(text):
+            return text.split(".", 1)[0]
+        return text
     if isinstance(value, bool):
         return int(value)
     if hasattr(value, "isoformat"):
@@ -98,6 +123,12 @@ def cell_to_db(value: Any) -> Any:
         return str(value)
     text = str(value).strip()
     return text if text != "" else None
+
+
+def re_fullmatch_int_float(text: str) -> bool:
+    if text.endswith(".0") and text[:-2].lstrip("-").isdigit():
+        return True
+    return False
 
 
 def table_columns(connection: sqlite3.Connection, table: str) -> list[str]:
@@ -151,7 +182,10 @@ def prepare_frame(
 
     frame = data[usable].copy()
     for col in usable:
-        frame[col] = frame[col].map(cell_to_db)
+        preserve = col in LEADING_ZERO_COLUMNS
+        frame[col] = frame[col].map(
+            lambda value, _preserve=preserve: cell_to_db(value, preserve_text=_preserve)
+        )
 
     # Drop rows without primary key values
     for key in key_columns:

@@ -170,3 +170,15 @@ Salesforce;SF-X04;Cross (→SAP);SAP Auslauf, SF noch IsActive;IsActive;SYNC;Kon
 Salesforce;SF-X05;Cross (→HS);Listenpreis SF ≠ HubSpot;UnitPrice / price;SYNC;Konsistenz;E3;hoch;Vertrieb (Lena);VERTRIEB
 Salesforce;SF-X06;Cross (→HS);Händlerpreis SF ≠ HubSpot;UnitPrice;SYNC;Konsistenz;E3;hoch;Vertrieb;VERTRIEB
 Salesforce;SF-X07;Cross (→SAP/HS);Abdeckung ≠ 100 FERT;Product2 / MATNR;SYNC;Vollständigkeit;E3;hoch;alle;MDM
+SAP;SAP-G01;SAP (generisch);Pflichtfeld leer;;KEY;Vollständigkeit;E1;hoch;Stammdaten;MDM
+SAP;SAP-G02;SAP (generisch);Wert ausserhalb erlaubter Domäne;;DOMAIN;Gültigkeit;E1;mittel;Stammdaten;MDM
+SAP;SAP-G03;SAP (generisch);Doppelter Schlüssel;;DUP;Eindeutigkeit;E1;hoch;Stammdaten;MDM
+SAP;SAP-G04;SAP (generisch);Ungültiges Datum;;FORMAT;Gültigkeit;E1;mittel;Stammdaten;MDM
+HubSpot;HS-G01;HubSpot (generisch);Pflichtfeld leer;;KEY;Vollständigkeit;E1;hoch;Katalog;MDM
+HubSpot;HS-G02;HubSpot (generisch);Wert ausserhalb erlaubter Domäne;;DOMAIN;Gültigkeit;E1;mittel;Katalog;MDM
+HubSpot;HS-G03;HubSpot (generisch);Doppelter Schlüssel;;DUP;Eindeutigkeit;E1;hoch;Katalog;MDM
+HubSpot;HS-G04;HubSpot (generisch);Ungültiges Datum;;FORMAT;Gültigkeit;E1;mittel;Katalog;MDM
+Salesforce;SF-G01;Salesforce (generisch);Pflichtfeld leer;;KEY;Vollständigkeit;E1;hoch;CRM;MDM
+Salesforce;SF-G02;Salesforce (generisch);Wert ausserhalb erlaubter Domäne;;DOMAIN;Gültigkeit;E1;mittel;CRM;MDM
+Salesforce;SF-G03;Salesforce (generisch);Doppelter Schlüssel;;DUP;Eindeutigkeit;E1;hoch;CRM;MDM
+Salesforce;SF-G04;Salesforce (generisch);Ungültiges Datum;;FORMAT;Gültigkeit;E1;mittel;CRM;MDM

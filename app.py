@@ -243,16 +243,15 @@ def aktualisiere_meta_zaehler(connection: sqlite3.Connection) -> None:
 
 
 def datenbank_vorbereiten() -> None:
-    """Legt die DB an (falls nötig) und befüllt leere Fehlerdefinitionen."""
+    """Legt die DB an (falls nötig) und aktualisiert Fehlerdefinitionen (Upsert)."""
     db_path = Path(app.config["DATABASE"])
     if not db_path.exists():
         init_database(db_path)
     with sqlite3.connect(db_path) as connection:
         connection.execute("PRAGMA foreign_keys = ON")
         connection.executescript(APP_SCHEMA)
-        leer = connection.execute("SELECT COUNT(*) FROM Fehlerdefinition").fetchone()[0] == 0
-        if leer:
-            importiere_fehlerdefinitionen(connection)
+        # Bei jedem Start: neue Katalogcodes (z. B. *-G0x) ohne Neuinstallation
+        importiere_fehlerdefinitionen(connection)
         aktualisiere_meta_zaehler(connection)
 
 

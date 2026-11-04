@@ -80,6 +80,22 @@ DEFAULT_OBJECT: dict[str, str] = {
     "Price_Book_Items": "Price Book Items",
 }
 
+# Generische Katalogcodes (FEHLERKLASSIFIZIERUNG *-G0x), wenn kein Feldtreffer
+GENERIC_ISSUE_SUFFIX: dict[str, str] = {
+    "Fehlender Wert": "G01",
+    "Fehlende Spalte": "G01",
+    "Unbekannter Wert": "G02",
+    "Doppelter Schlüssel": "G03",
+    "Ungültiges Datum": "G04",
+}
+SYSTEM_GENERIC_PREFIX: dict[str, str] = {
+    "SAP": "SAP",
+    "HubSpot": "HS",
+    "Salesforce": "SF",
+}
+_FIELD_TOKEN_SPLIT = re.compile(r"[^0-9A-Za-z_]+")
+ClassificationCache = dict[tuple[str, str, str | None], dict[str, Any]]
+
 
 def load_rules(rules_file: Path) -> dict[str, Any]:
     if not rules_file.exists():
@@ -132,9 +148,19 @@ def clean(value: Any) -> Any:
     return None if pd.isna(value) else value
 
 
-def source_id(data: pd.DataFrame, index: int | None) -> Any:
+def source_id(data: pd.DataFrame, index: int | None, table: str | None = None) -> Any:
     if index is None:
         return "Mehrere Datensätze"
+    # Composite Key MATNR+WERKS für Werksdaten (sonst kollidieren Bearbeitungs-Schlüssel)
+    if table in {"Produkte_FERT", "Ersatzteile_ERSA"}:
+        if "MATNR" in data.columns and "WERKS" in data.columns:
+            matnr = data.at[index, "MATNR"]
+            werks = data.at[index, "WERKS"]
+            if pd.notna(matnr) and pd.notna(werks):
+                matnr_text = str(matnr).strip()
+                werks_text = str(werks).strip()
+                if matnr_text and werks_text:
+                    return f"{matnr_text}|{werks_text}"
     candidates = [
         "MATNR", "matnr", "Materialnummer", "ATN_SAP_Materialnummer__c",
         "atn_sap_materialnummer", "Id", "id", "hs_object_id", "ProductCode",
@@ -192,6 +218,32 @@ def department_for(table: str, rules: dict[str, Any]) -> str:
     return rules.get("default_department", "Datenmanagement (MDM)")
 
 
+def _field_tokens(fields_cell: Any) -> set[str]:
+    if fields_cell is None or (isinstance(fields_cell, float) and pd.isna(fields_cell)):
+        return set()
+    text = str(fields_cell).strip()
+    if not text or text.casefold() == "nan":
+        return set()
+    return {token.casefold() for token in _FIELD_TOKEN_SPLIT.split(text) if token}
+
+
+def generic_code_for(system: str, issue_type: str) -> str | None:
+    prefix = SYSTEM_GENERIC_PREFIX.get(system)
+    suffix = GENERIC_ISSUE_SUFFIX.get(issue_type)
+    if not prefix or not suffix:
+        return None
+    return f"{prefix}-{suffix}"
+
+
+def _catalog_row_by_id(catalog: pd.DataFrame, code: str) -> dict[str, Any]:
+    if "ID" not in catalog.columns:
+        return {}
+    hits = catalog[catalog["ID"].astype(str) == code]
+    if hits.empty:
+        return {}
+    return hits.iloc[0].to_dict()
+
+
 def classification_for(
     catalog: pd.DataFrame,
     *,
@@ -200,55 +252,89 @@ def classification_for(
     column: str | None,
     data: pd.DataFrame,
     rules: dict[str, Any],
+    cache: ClassificationCache | None = None,
 ) -> dict[str, Any]:
+    cache_key = (table, issue_type, column)
+    if cache is not None and cache_key in cache:
+        return cache[cache_key]
+
     config = rules.get("classification", {})
     overrides = config.get("overrides", {})
     override = overrides.get(issue_type, {})
     wanted_class = config.get("issue_type_class", {}).get(issue_type)
     obj = infer_object(data, table)
     system = system_for(table)
-    candidates = catalog
     object_aliases = config.get("object_aliases", {}).get(
         table, OBJECT_ALIASES.get(table, [obj])
     )
-    if "Objekt" in catalog:
-        object_mask = catalog["Objekt"].astype(str).isin(object_aliases)
-        candidates = catalog[object_mask]
-    if candidates.empty:
-        candidates = pd.DataFrame()
-    if wanted_class and not candidates.empty and "Klasse" in candidates:
-        class_candidates = candidates[candidates["Klasse"].astype(str).str.contains(
-            wanted_class, case=False, na=False
-        )]
-        if not class_candidates.empty:
-            candidates = class_candidates
-    if system != "Unbekannt" and not candidates.empty and "SYSTEM" in candidates and len(candidates) > 1:
+
+    # a) Kandidaten = Objekt-Aliase und System
+    candidates = catalog
+    if "Objekt" in catalog.columns:
+        candidates = catalog[catalog["Objekt"].astype(str).isin(object_aliases)]
+    if system != "Unbekannt" and not candidates.empty and "SYSTEM" in candidates.columns:
         system_candidates = candidates[
             candidates["SYSTEM"].astype(str).str.casefold() == system.casefold()
         ]
         if not system_candidates.empty:
             candidates = system_candidates
-    if column and not candidates.empty and "Felder" in candidates:
-        field_candidates = candidates[
-            candidates["Felder"].astype(str).str.casefold().str.contains(
-                re.escape(column.casefold()), na=False
-            )
+
+    selected: dict[str, Any] = {}
+
+    # b/c) Feldabgleich per TOKEN; Klasse nur unter Feldtreffern filtern
+    field_hits = pd.DataFrame()
+    if column and not candidates.empty and "Felder" in candidates.columns:
+        col_key = column.casefold()
+        field_hits = candidates[
+            candidates["Felder"].map(lambda cell: col_key in _field_tokens(cell))
         ]
-        if not field_candidates.empty:
-            candidates = field_candidates
-    selected = candidates.iloc[0].to_dict() if not candidates.empty else {}
+
+    if not field_hits.empty:
+        if wanted_class and "Klasse" in field_hits.columns:
+            class_hits = field_hits[
+                field_hits["Klasse"].astype(str).map(
+                    lambda klasse: wanted_class.casefold() in str(klasse).casefold()
+                )
+            ]
+            selected = (
+                class_hits.iloc[0].to_dict()
+                if not class_hits.empty
+                else field_hits.iloc[0].to_dict()
+            )
+        else:
+            selected = field_hits.iloc[0].to_dict()
+    else:
+        # d) Kein Feldtreffer → generischer G-Code, nie iloc[0] eines anderen Befunds
+        generic_id = generic_code_for(system, issue_type)
+        if generic_id:
+            selected = _catalog_row_by_id(catalog, generic_id)
+            if not selected:
+                selected = {
+                    "ID": generic_id,
+                    "Befund": issue_type,
+                    "Klasse": wanted_class or "FORMAT",
+                    "DQ": "Gültigkeit",
+                    "Ebene": "E1",
+                    "Schwere": "mittel",
+                    "Impact": "",
+                    "Owner": "MDM",
+                }
+        else:
+            fallback = config.get("fallback_id")
+            selected = {
+                "ID": fallback,
+                "Befund": issue_type,
+                "Klasse": wanted_class or "FORMAT",
+                "DQ": "Gültigkeit",
+                "Ebene": "E1",
+                "Schwere": "mittel",
+                "Impact": "",
+                "Owner": "MDM",
+            }
+
     selected.update(override)
-    if not selected:
-        selected = {
-            "ID": config.get("fallback_id", "GEN-001"),
-            "Befund": issue_type,
-            "Klasse": wanted_class or "FORMAT",
-            "DQ": "Gültigkeit",
-            "Ebene": "E1",
-            "Schwere": "mittel",
-            "Impact": "",
-            "Owner": "MDM",
-        }
+    if cache is not None:
+        cache[cache_key] = selected
     return selected
 
 
@@ -295,6 +381,7 @@ def add_issue(
     suggestion: str,
     rules: dict[str, Any],
     catalog: pd.DataFrame,
+    class_cache: ClassificationCache | None = None,
 ) -> None:
     classification = classification_for(
         catalog,
@@ -303,9 +390,14 @@ def add_issue(
         column=column,
         data=data,
         rules=rules,
+        cache=class_cache,
     )
+    priority = priority_for(classification, issue_type, column, rules)
+    # Kosmetik (Schreibvariante/Leerzeichen) nicht materialisieren — sonst 100k+ Zeilen
+    if str(priority).casefold() == "ignorieren":
+        return
     issues.append({
-        "id": source_id(data, index),
+        "id": source_id(data, index, table),
         "Datei": system_for(table),
         "Datensatz": table,
         "Erkanntes Objekt": infer_object(data, table),
@@ -320,11 +412,26 @@ def add_issue(
         "Schwere": classification.get("Schwere"),
         "Impact": classification.get("Impact"),
         "Owner": classification.get("Owner"),
-        "Fehlerpriorität": priority_for(classification, issue_type, column, rules),
+        "Fehlerpriorität": priority,
         "Abteilung": department_for(table, rules),
         "Wert": clean(value),
         "Vorschlag": suggestion,
     })
+
+
+def allowed_values_for(
+    rules: dict[str, Any], table: str, column: str
+) -> list[Any] | None:
+    """Tabellenbezogene Domäne, Fallback auf globales {"<Spalte>": [...]}."""
+    allowed_map = rules.get("allowed_values", {})
+    table_map = allowed_map.get(table)
+    if isinstance(table_map, dict) and column in table_map:
+        values = table_map.get(column)
+        return list(values) if values is not None else None
+    global_values = allowed_map.get(column)
+    if isinstance(global_values, list):
+        return list(global_values)
+    return None
 
 
 def _check_required_batch(
@@ -335,6 +442,7 @@ def _check_required_batch(
     required: set[str],
     rules: dict[str, Any],
     catalog: pd.DataFrame,
+    class_cache: ClassificationCache | None = None,
 ) -> None:
     for column in required:
         if column not in data.columns:
@@ -345,7 +453,7 @@ def _check_required_batch(
                     issues, table=table, data=data, issue_type="Fehlender Wert",
                     index=int(index), column=column, value=value,
                     suggestion="Wert ergänzen oder als optional dokumentieren.",
-                    rules=rules, catalog=catalog,
+                    rules=rules, catalog=catalog, class_cache=class_cache,
                 )
 
 
@@ -357,6 +465,7 @@ def _check_column_batch(
     column: str,
     rules: dict[str, Any],
     catalog: pd.DataFrame,
+    class_cache: ClassificationCache | None = None,
 ) -> None:
     """Zeilenlokale Prüfungen auf einem Batch (ohne Schreibvariante/Duplikate)."""
     if column not in batch.columns:
@@ -365,7 +474,11 @@ def _check_column_batch(
     if series.empty:
         return
     lower = column.casefold()
-    if series.map(lambda value: isinstance(value, str)).any():
+    skip_spaces = (
+        str(rules.get("priority_by_issue", {}).get("Überflüssige Leerzeichen", "")).casefold()
+        == "ignorieren"
+    )
+    if not skip_spaces and series.map(lambda value: isinstance(value, str)).any():
         for index, value in series.items():
             if isinstance(value, str) and value != value.strip():
                 add_issue(
@@ -373,7 +486,7 @@ def _check_column_batch(
                     issue_type="Überflüssige Leerzeichen", index=int(index),
                     column=column, value=value,
                     suggestion="Leerzeichen entfernen.",
-                    rules=rules, catalog=catalog,
+                    rules=rules, catalog=catalog, class_cache=class_cache,
                 )
     if "date" in lower or "datum" in lower or "created" in lower:
         parsed = pd.to_datetime(series, format="mixed", errors="coerce")
@@ -382,18 +495,22 @@ def _check_column_batch(
                 issues, table=table, data=data, issue_type="Ungültiges Datum",
                 index=int(index), column=column, value=data.at[index, column],
                 suggestion="Datum im Format YYYY-MM-DD speichern.",
-                rules=rules, catalog=catalog,
+                rules=rules, catalog=catalog, class_cache=class_cache,
             )
-    allowed = rules.get("allowed_values", {}).get(column)
+    allowed = allowed_values_for(rules, table, column)
     if allowed:
-        allowed_normalized = {normalize(value) for value in allowed}
+        # SAP-/Domänencodes case-sensitiv und exakt (kein normalize)
+        allowed_exact = {str(value).strip() for value in allowed}
         for index, value in series.items():
-            if normalize(value) not in allowed_normalized:
+            text = str(value).strip()
+            if not text:
+                continue  # Leere Werte: required_columns
+            if text not in allowed_exact:
                 add_issue(
                     issues, table=table, data=data, issue_type="Unbekannter Wert",
                     index=int(index), column=column, value=value,
-                    suggestion=f"Erlaubte Werte: {', '.join(sorted(allowed))}.",
-                    rules=rules, catalog=catalog,
+                    suggestion=f"Erlaubte Werte: {', '.join(sorted(allowed_exact))}.",
+                    rules=rules, catalog=catalog, class_cache=class_cache,
                 )
 
 
@@ -404,13 +521,18 @@ def _check_column_global(
     column: str,
     rules: dict[str, Any],
     catalog: pd.DataFrame,
+    class_cache: ClassificationCache | None = None,
 ) -> None:
     """Prüfungen über die gesamte Spalte (Schreibvariante, Doppelter Schlüssel)."""
     series = data[column].dropna()
     if series.empty:
         return
     lower = column.casefold()
-    if series.map(lambda value: isinstance(value, str)).any():
+    skip_variants = (
+        str(rules.get("priority_by_issue", {}).get("Schreibvariante", "")).casefold()
+        == "ignorieren"
+    )
+    if not skip_variants and series.map(lambda value: isinstance(value, str)).any():
         normalized = series.map(normalize)
         for key, group in series.groupby(normalized):
             variants = sorted({str(value) for value in group})
@@ -421,7 +543,7 @@ def _check_column_global(
                         issue_type="Schreibvariante", index=int(index),
                         column=column, value=data.at[index, column],
                         suggestion=f"Schreibweise vereinheitlichen, z. B. '{variants[0]}'.",
-                        rules=rules, catalog=catalog,
+                        rules=rules, catalog=catalog, class_cache=class_cache,
                     )
     looks_like_key = lower in {
         "id", "code", "sku", "productcode", "stockkeepingunit", "hs_object_id"
@@ -432,7 +554,7 @@ def _check_column_global(
                 issues, table=table, data=data, issue_type="Doppelter Schlüssel",
                 index=int(index), column=column, value=data.at[index, column],
                 suggestion="Schlüssel bereinigen; jeder Wert muss eindeutig sein.",
-                rules=rules, catalog=catalog,
+                rules=rules, catalog=catalog, class_cache=class_cache,
             )
 
 
@@ -446,9 +568,12 @@ def check_table(
     on_progress: ProgressCallback | None = None,
     progress_base: float = 0.0,
     progress_span: float = 100.0,
+    class_cache: ClassificationCache | None = None,
 ) -> list[dict[str, Any]]:
     """Prüft eine Tabelle in Zeilen-Batches; globale Checks laufen spaltenweise danach."""
     issues: list[dict[str, Any]] = []
+    if class_cache is None:
+        class_cache = {}
     required = required_columns_for(table, rules)
     row_count = len(data)
     columns = list(data.columns)
@@ -458,7 +583,7 @@ def check_table(
             add_issue(
                 issues, table=table, data=data, issue_type="Fehlende Spalte",
                 index=None, column=column, value=None, suggestion="Spalte ergänzen.",
-                rules=rules, catalog=catalog,
+                rules=rules, catalog=catalog, class_cache=class_cache,
             )
 
     if row_count == 0:
@@ -478,9 +603,13 @@ def check_table(
     effective_batch = max(1, batch_size)
     for start in range(0, row_count, effective_batch):
         batch = data.iloc[start : start + effective_batch]
-        _check_required_batch(issues, table, data, batch, required, rules, catalog)
+        _check_required_batch(
+            issues, table, data, batch, required, rules, catalog, class_cache
+        )
         for column in columns:
-            _check_column_batch(issues, table, data, batch, column, rules, catalog)
+            _check_column_batch(
+                issues, table, data, batch, column, rules, catalog, class_cache
+            )
         done = min(start + effective_batch, row_count)
         fraction = done / row_count
         _emit(
@@ -499,7 +628,9 @@ def check_table(
     global_span = progress_span * 0.3
     col_count = max(len(columns), 1)
     for col_index, column in enumerate(columns):
-        _check_column_global(issues, table, data, column, rules, catalog)
+        _check_column_global(
+            issues, table, data, column, rules, catalog, class_cache
+        )
         fraction = (col_index + 1) / col_count
         _emit(
             on_progress,
@@ -549,58 +680,110 @@ def write_fehlerliste(
     damit die DB nicht mit kosmetischen Massenbefunden vollläuft.
 
     Existiert die App-Tabelle ``Fehlerbearbeitung``, werden Feld und Ist-Wert
-    für die Web-Oberfläche mitgeschrieben.
+    für die Web-Oberfläche mitgeschrieben. Manuelle Bearbeitungen (Status != offen
+    oder Korrektur_Wert/Kommentar gesetzt) bleiben über denselben Schlüssel erhalten.
     """
     write_bearbeitung = _has_table(connection, "Fehlerbearbeitung")
+    preserved: dict[tuple[str, str, str, str | None], tuple[Any, ...]] = {}
     if write_bearbeitung:
-        connection.execute("DELETE FROM Fehlerbearbeitung")
-    connection.execute("DELETE FROM Fehlerliste")
+        for row in connection.execute(
+            """
+            SELECT l.Fehlercode, l.Ursprungstabelle, l.Ursprungs_ID, b.Feld,
+                   b.Status, b.Korrektur_Wert, b.Kommentar, b.Bearbeitet_am
+            FROM Fehlerbearbeitung AS b
+            JOIN Fehlerliste AS l ON l.Fehlerid = b.Fehlerid
+            WHERE b.Status != 'offen'
+               OR (
+                    b.Korrektur_Wert IS NOT NULL
+                    AND TRIM(b.Korrektur_Wert) != ''
+               )
+               OR (
+                    b.Kommentar IS NOT NULL
+                    AND TRIM(b.Kommentar) != ''
+               )
+            """
+        ):
+            key = (str(row[0]), str(row[1]), str(row[2]), row[3])
+            preserved[key] = (row[4], row[5], row[6], row[7])
 
-    rows: list[tuple[Any, ...]] = []
-    for issue in issues:
-        code = issue.get("Fehlerklassifizierung")
-        if not code or str(code) not in valid_codes:
-            continue
-        if issue.get("Prüfung") == "Keine Auffälligkeiten":
-            continue
-        if str(issue.get("Fehlerpriorität", "")).casefold() == "ignorieren":
-            continue
-        ursprungs_id = issue.get("id")
-        if ursprungs_id is None or str(ursprungs_id).strip() == "":
-            ursprungs_id = "unbekannt"
-        feld = issue.get("Spalte")
-        wert = issue.get("Wert")
-        rows.append((
-            str(code),
-            str(issue.get("Datensatz") or "unbekannt"),
-            str(ursprungs_id),
-            None if feld is None or str(feld).strip() == "" else str(feld),
-            None if wert is None or str(wert).strip() == "" else str(wert),
-        ))
+    try:
+        if write_bearbeitung:
+            connection.execute("DELETE FROM Fehlerbearbeitung")
+        connection.execute("DELETE FROM Fehlerliste")
 
-    count = 0
-    for start in range(0, len(rows), FEHLERLISTE_BATCH_SIZE):
-        chunk = rows[start : start + FEHLERLISTE_BATCH_SIZE]
-        for code, tabelle, ursprungs_id, feld, wert in chunk:
-            cursor = connection.execute(
-                """
-                INSERT INTO Fehlerliste (Fehlercode, Ursprungstabelle, Ursprungs_ID)
-                VALUES (?, ?, ?)
-                """,
-                (code, tabelle, ursprungs_id),
-            )
-            count += 1
-            if write_bearbeitung:
-                connection.execute(
-                    """
-                    INSERT INTO Fehlerbearbeitung
-                        (Fehlerid, Feld, Ist_Wert, Status)
-                    VALUES (?, ?, ?, 'offen')
-                    """,
-                    (cursor.lastrowid, feld, wert),
+        rows: list[tuple[Any, ...]] = []
+        for issue in issues:
+            code = issue.get("Fehlerklassifizierung")
+            if not code or str(code) not in valid_codes:
+                continue
+            if issue.get("Prüfung") == "Keine Auffälligkeiten":
+                continue
+            if str(issue.get("Fehlerpriorität", "")).casefold() == "ignorieren":
+                continue
+            ursprungs_id = issue.get("id")
+            if ursprungs_id is None or str(ursprungs_id).strip() == "":
+                ursprungs_id = "unbekannt"
+            feld = issue.get("Spalte")
+            wert = issue.get("Wert")
+            rows.append((
+                str(code),
+                str(issue.get("Datensatz") or "unbekannt"),
+                str(ursprungs_id),
+                None if feld is None or str(feld).strip() == "" else str(feld),
+                None if wert is None or str(wert).strip() == "" else str(wert),
+            ))
+
+        if not rows:
+            connection.commit()
+            return 0
+
+        connection.executemany(
+            """
+            INSERT INTO Fehlerliste (Fehlercode, Ursprungstabelle, Ursprungs_ID)
+            VALUES (?, ?, ?)
+            """,
+            [(code, tabelle, ursprungs_id) for code, tabelle, ursprungs_id, _, _ in rows],
+        )
+
+        if write_bearbeitung:
+            fehler_ids = [
+                int(row[0])
+                for row in connection.execute(
+                    "SELECT Fehlerid FROM Fehlerliste ORDER BY Fehlerid"
                 )
+            ]
+            if len(fehler_ids) != len(rows):
+                raise RuntimeError(
+                    "Fehlerliste/Bearbeitung: Anzahl IDs stimmt nicht mit Inserts überein."
+                )
+            bearbeitung_rows: list[tuple[Any, ...]] = []
+            for fehlerid, (code, tabelle, ursprungs_id, feld, wert) in zip(
+                fehler_ids, rows, strict=True
+            ):
+                prev = preserved.get((code, tabelle, ursprungs_id, feld))
+                if prev:
+                    status, korrektur, kommentar, bearbeitet_am = prev
+                    bearbeitung_rows.append(
+                        (fehlerid, feld, wert, status, korrektur, kommentar, bearbeitet_am)
+                    )
+                else:
+                    bearbeitung_rows.append(
+                        (fehlerid, feld, wert, "offen", None, None, None)
+                    )
+            connection.executemany(
+                """
+                INSERT INTO Fehlerbearbeitung
+                    (Fehlerid, Feld, Ist_Wert, Status, Korrektur_Wert, Kommentar, Bearbeitet_am)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                bearbeitung_rows,
+            )
+
         connection.commit()
-    return count
+    except Exception:
+        connection.rollback()
+        raise
+    return len(rows)
 
 
 def run_check(
@@ -627,6 +810,7 @@ def run_check(
     rules = load_rules(rules_file)
     catalog = load_catalog(catalog_file)
     issues: list[dict[str, Any]] = []
+    class_cache: ClassificationCache = {}
 
     _emit(
         on_progress,
@@ -677,6 +861,7 @@ def run_check(
                     on_progress=on_progress,
                     progress_base=progress_base,
                     progress_span=progress_span,
+                    class_cache=class_cache,
                 )
             )
             del data
