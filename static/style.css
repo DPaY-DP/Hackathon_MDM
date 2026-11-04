@@ -1,0 +1,477 @@
+:root {
+  --bg-page: #f4f6f9;
+  --bg-card: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+
+  /* Status- & Severity-Farben */
+  --critical: #ef4444;
+  --critical-bg: #fef2f2;
+  --warning: #f59e0b;
+  --warning-bg: #fffbeb;
+  --info: #3b82f6;
+  --info-bg: #eff6ff;
+  --success: #10b981;
+  --accent: #0f172a;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  line-height: 1.5;
+  padding: 2rem;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* --- HEADER --- */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dashboard-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-header p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+}
+
+.status-badge {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* --- EBENE 1: GLOBALE KPI CARDS --- */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.kpi-label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.kpi-value {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.kpi-sub {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+}
+.pill.bad { background: var(--critical-bg); color: var(--critical); }
+.pill.warn { background: var(--warning-bg); color: var(--warning); }
+
+/* Gestapelter Balken für Severity Split */
+.severity-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 0.75rem 0;
+  background: var(--border-color);
+}
+.seg-critical { background: var(--critical); }
+.seg-warning  { background: var(--warning); }
+.seg-info     { background: var(--info); }
+
+.severity-legend {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+/* --- ÜBERGANG ZU EBENE 2: SYSTEM-DOMÄNEN --- */
+.section-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.domain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.domain-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.domain-card:hover {
+  transform: translateY(-2px);
+  border-color: #94a3b8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Hervorhebung für die Cross-System-Kachel */
+.domain-card.cross-system {
+  border-left: 4px solid var(--info);
+}
+
+.domain-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.domain-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.domain-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.domain-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.85rem;
+}
+
+:root {
+  --bg-page: #f4f6f9;
+  --bg-card: #ffffff;
+  --bg-subtle: #f8fafc;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --accent: #0f172a;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  line-height: 1.5;
+  padding: 2rem;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* --- NAVIGATION & HEADER --- */
+.breadcrumb {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.breadcrumb a {
+  color: var(--text-main);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.page-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.page-header p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* --- CONTAINER FÜR DIE FEHLERLISTE --- */
+.table-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-box-header {
+  padding: 1rem 1.5rem;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+th, td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+thead {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* --- BUTTON STYLING --- */
+.btn-edit {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-edit:hover {
+  background: var(--bg-subtle);
+  border-color: #94a3b8;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.page-header:has(.dept-filter) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.dept-filter {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+.dept-filter label { color: var(--text-muted, #6b7280); }
+.dept-filter select,
+.edit-dialog input,
+.edit-dialog select,
+.edit-dialog textarea {
+  font: inherit;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-card, #fff);
+  color: inherit;
+}
+.dept-filter select { min-width: 15rem; }
+
+/* Zusatzinfos in der Fehlerbeschreibung */
+.err-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text-muted, #6b7280);
+}
+.err-meta .pill { font-size: 0.75rem; }
+.status {
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+.status-in-Bearbeitung { color: #b45309; }
+.status-behoben { color: #15803d; }
+tr.row-behoben td { opacity: 0.55; }
+tr.row-behoben td:last-child { opacity: 1; }
+
+/* Meldungen nach dem Speichern */
+.flash {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+.flash-ok { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.flash-fehler { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+/* Bearbeiten-Dialog */
+.edit-dialog {
+  width: min(640px, calc(100vw - 2rem));
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1.5rem;
+  background: var(--bg-card, #fff);
+  color: inherit;
+}
+.edit-dialog::backdrop { background: rgba(15, 23, 42, 0.45); }
+.edit-dialog h2 { margin: 0 0 0.25rem; font-size: 1.2rem; }
+.edit-sub { margin: 0 0 1rem; color: var(--text-muted, #6b7280); font-size: 0.85rem; }
+.edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem 1rem;
+}
+.edit-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-muted, #6b7280);
+}
+.edit-grid .span-2 { grid-column: span 2; }
+.edit-grid input, .edit-grid select, .edit-grid textarea { color: var(--text-main); }
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+.btn-secondary {
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+@media (max-width: 560px) {
+  .edit-grid { grid-template-columns: 1fr; }
+  .edit-grid .span-2 { grid-column: auto; }
+  .dept-filter { margin-left: 0; width: 100%; }
+  .dept-filter select { flex: 1; min-width: 0; }
+}
+/* --- SCHWEREGRADE laut FEHLERKLASSIFIZIERUNG.csv (Spalte "Schwere") --- */
+:root {
+  --sev-hoch: var(--critical);
+  --sev-hoch-bg: var(--critical-bg);
+  --sev-mittel-hoch: #f97316;
+  --sev-mittel-hoch-bg: #fff7ed;
+  --sev-mittel: var(--warning);
+  --sev-mittel-bg: var(--warning-bg);
+  --sev-niedrig-mittel: var(--info);
+  --sev-niedrig-mittel-bg: var(--info-bg);
+  --sev-niedrig: #94a3b8;
+  --sev-niedrig-bg: #f1f5f9;
+  --sev-unbekannt: #cbd5e1;
+  --sev-unbekannt-bg: #f8fafc;
+}
+
+/* Balken + Punkte in der Legende (Startseite) */
+.seg-hoch           { background: var(--sev-hoch); }
+.seg-mittel-hoch    { background: var(--sev-mittel-hoch); }
+.seg-mittel         { background: var(--sev-mittel); }
+.seg-niedrig-mittel { background: var(--sev-niedrig-mittel); }
+.seg-niedrig        { background: var(--sev-niedrig); }
+.seg-unbekannt      { background: var(--sev-unbekannt); }
+
+.severity-legend {
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+/* Pills in der Fehlerbeschreibung (Unterseiten) */
+.pill.sev-hoch           { background: var(--sev-hoch-bg);           color: var(--sev-hoch); }
+.pill.sev-mittel-hoch    { background: var(--sev-mittel-hoch-bg);    color: #c2410c; }
+.pill.sev-mittel         { background: var(--sev-mittel-bg);         color: #b45309; }
+.pill.sev-niedrig-mittel { background: var(--sev-niedrig-mittel-bg); color: #1d4ed8; }
+.pill.sev-niedrig        { background: var(--sev-niedrig-bg);        color: var(--text-muted); }
+.pill.sev-unbekannt      { background: var(--sev-unbekannt-bg);      color: var(--text-muted); border: 1px dashed var(--sev-unbekannt); }
+
+/* Schweregrad-Karte auf der Startseite über zwei Spalten */
+@media (min-width: 640px) {
+  .kpi-card-wide { grid-column: span 2; }
+}

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ cfg.seitentitel }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <div class="container">
+    <!-- Seitenkopf -->
+    <header class="page-header">
+      <div>
+        <h1>{{ cfg.ueberschrift }}</h1>
+        <p>Vollständige Auflistung aller erkannten Regelverstöße</p>
+      </div>
+
+      <!-- Abteilungsfilter (oben rechts) -->
+      <form class="dept-filter" method="get" action="{{ url_for('fehlerliste', bereich=bereich) }}">
+        <label for="abteilung">Abteilung</label>
+        <select id="abteilung" name="abteilung" onchange="this.form.submit()">
+          <option value="" {{ 'selected' if not abteilung }}>Alle Abteilungen</option>
+          {% for a in abteilungen %}
+          <option value="{{ a.code }}" {{ 'selected' if a.code == abteilung }}>{{ a.name }} ({{ a.anzahl }})</option>
+          {% endfor %}
+        </select>
+        <noscript><button type="submit" class="btn-edit">Filtern</button></noscript>
+      </form>
+    </header>
+
+    {% with meldungen = get_flashed_messages(with_categories=true) %}
+      {% for kategorie, text in meldungen %}
+      <div class="flash flash-{{ kategorie }}">{{ text }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <!-- Tabellen-Box -->
+    <section class="table-box">
+      <div class="table-box-header">
+        Gefundene Datensatzfehler ({{ offene_anzahl }} Einträge)
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Tabelle</th>
+              <th>Materialnummer (MATNR)</th>
+              <th>Feld</th>
+              <th>Ist-Wert</th>
+              <th>Fehlerbeschreibung</th>
+              <th style="text-align: right;">Aktion</th>
+            </tr>
+          </thead>
+          <tbody id="sap-error-tbody">
+            {% for f in eintraege %}
+            <tr class="{{ 'row-behoben' if f.Status == 'behoben' }}">
+              <td>{{ f.Ursprungstabelle }}</td>
+              <td><code style="background: var(--bg-subtle); padding: 0.1rem 0.3rem; border-radius: 4px;">{{ f.Ursprungs_ID }}</code></td>
+              <td>{{ f.Feld_anzeige or '–' }}</td>
+              <td>{% if f.Ist_Wert %}{{ f.Ist_Wert }}{% else %}<span style="color: var(--text-muted);">–</span>{% endif %}</td>
+              <td>
+                {{ f.Kurzbeschreibung or f.Fehlercode }}
+                <div class="err-meta">
+                  <span class="pill sev-{{ f.stufe }}" title="Schwere laut Datenbank: {{ f.Schwere or '–' }}">{{ f.stufe_anzeige }}</span>
+                  <span>{{ f.Fehlercode }} · {{ f.Owner_name }}</span>
+                  {% if f.Status != 'offen' %}<span class="status status-{{ f.Status | replace(' ', '-') }}">{{ f.Status }}</span>{% endif %}
+                </div>
+              </td>
+              <td style="text-align: right;">
+                <button type="button" class="btn-edit"
+                  data-fehlerid="{{ f.Fehlerid }}"
+                  data-fehlercode="{{ f.Fehlercode }}"
+                  data-tabelle="{{ f.Ursprungstabelle }}"
+                  data-ursprungsid="{{ f.Ursprungs_ID }}"
+                  data-feld="{{ f.Feld_anzeige }}"
+                  data-istwert="{{ f.Ist_Wert or '' }}"
+                  data-korrektur="{{ f.Korrektur_Wert or '' }}"
+                  data-status="{{ f.Status }}"
+                  data-kommentar="{{ f.Kommentar or '' }}"
+                  data-bearbeitet="{{ f.Bearbeitet_am or '' }}">Datensatz bearbeiten</button>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="6" style="color: var(--text-muted);">
+                Keine fehlerhaften Datensätze{% if abteilung %} für diese Abteilung{% endif %} gefunden.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Bearbeiten-Dialog -->
+  <dialog id="edit-dialog" class="edit-dialog">
+    <form method="post" id="edit-form">
+      <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+      <h2>Datensatz bearbeiten</h2>
+      <p class="edit-sub" id="edit-sub"></p>
+
+      <div class="edit-grid">
+        <label>Tabelle
+          <input name="Ursprungstabelle" id="f-tabelle" required>
+        </label>
+        <label>Materialnummer / ID
+          <input name="Ursprungs_ID" id="f-ursprungsid" required>
+        </label>
+        <label class="span-2">Fehlercode
+          <select name="Fehlercode" id="f-fehlercode" required>
+            {% for d in definitionen %}
+            <option value="{{ d.Fehlercode }}">{{ d.Fehlercode }} – {{ d.Kurzbeschreibung }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Feld
+          <input name="Feld" id="f-feld">
+        </label>
+        <label>Status
+          <select name="Status" id="f-status">
+            {% for s in status_werte %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>Ist-Wert
+          <input name="Ist_Wert" id="f-istwert">
+        </label>
+        <label>Korrigierter Wert
+          <input name="Korrektur_Wert" id="f-korrektur">
+        </label>
+        <label class="span-2">Kommentar
+          <textarea name="Kommentar" id="f-kommentar" rows="3"></textarea>
+        </label>
+      </div>
+
+      <div class="edit-actions">
+        <button type="button" class="btn-secondary" id="edit-cancel">Abbrechen</button>
+        <button type="submit" class="btn-edit">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    (function () {
+      const dialog = document.getElementById('edit-dialog');
+      const form = document.getElementById('edit-form');
+      const urlTemplate = "{{ url_for('fehler_bearbeiten', fehlerid=0) }}";
+      const setVal = (id, v) => { document.getElementById(id).value = v || ''; };
+
+      document.getElementById('sap-error-tbody').addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-edit');
+        if (!btn) return;
+        const d = btn.dataset;
+        form.action = urlTemplate.replace('/0/', '/' + d.fehlerid + '/');
+        setVal('f-tabelle', d.tabelle);
+        setVal('f-ursprungsid', d.ursprungsid);
+        setVal('f-feld', d.feld);
+        setVal('f-istwert', d.istwert);
+        setVal('f-korrektur', d.korrektur);
+        setVal('f-kommentar', d.kommentar);
+        setVal('f-status', d.status || 'offen');
+
+        const sel = document.getElementById('f-fehlercode');
+        if (![...sel.options].some(o => o.value === d.fehlercode)) {
+          sel.add(new Option(d.fehlercode, d.fehlercode), 0);
+        }
+        sel.value = d.fehlercode;
+
+        document.getElementById('edit-sub').textContent =
+          'Fehler-ID ' + d.fehlerid + (d.bearbeitet ? ' · zuletzt bearbeitet ' + d.bearbeitet.replace('T', ' ').slice(0, 16) : '');
+        dialog.showModal();
+      });
+
+      document.getElementById('edit-cancel').addEventListener('click', () => dialog.close());
+    })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Globale Fehlerübersicht</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <div class="container">
+    <!-- HEADER -->
+    <header class="dashboard-header">
+      <div>
+        <h1>AgroTechNova – Data Quality Audit</h1>
+        <p>Stammdaten- & CRM-Analyse über SAP MARC/MARA, Salesforce und HubSpot</p>
+      </div>
+    </header>
+
+    <!-- EBENE 1: EXECUTIVE KPI-CARDS -->
+    <section class="kpi-grid">
+
+      <!-- KPI 1: Gesamtfehler -->
+      <div class="kpi-card">
+        <span class="kpi-label">Gefundene Regelverstöße</span>
+        <div class="kpi-value" id="kpi-total-errors">
+          {{ gesamt_fehler | de_zahl }}
+          {% if anzahl_hoch %}
+          <span class="pill bad">Kritisch prüfen</span>
+          {% elif gesamt_fehler %}
+          <span class="pill warn">Prüfen</span>
+          {% else %}
+          <span class="pill">Keine offenen Fehler</span>
+          {% endif %}
+        </div>
+        <span class="kpi-sub">Einzelfehler über alle Prüfdimensionen</span>
+      </div>
+
+      <!-- KPI 2: Betroffene Zeilen / Datenqualität -->
+      <div class="kpi-card">
+        <span class="kpi-label">Betroffene Datensätze</span>
+        <div class="kpi-value" id="kpi-dirty-rows">
+          {{ betroffene | de_zahl }} <span style="font-size: 1.1rem; font-weight: 400; color: var(--text-muted);">/ {{ gesamt_zeilen | de_zahl }}</span>
+        </div>
+        <span class="kpi-sub">Saubere Datensätze (Clean Rate): <strong>{{ clean_rate | de_zahl(1) }} %</strong></span>
+      </div>
+
+      <!-- KPI 3: Schweregrad-Split (doppelte Breite) -->
+      <div class="kpi-card kpi-card-wide">
+        <span class="kpi-label">Verteilung nach Schweregrad</span>
+        <div class="severity-bar">
+          {% for s in stufen %}
+          <div class="seg-{{ s.key }}" style="width: {{ '%.1f' % s.anteil }}%;" title="{{ s.name }}: {{ s.anzahl }}"></div>
+          {% endfor %}
+        </div>
+        <div class="severity-legend">
+          {% for s in stufen %}
+          <span><i class="dot seg-{{ s.key }}"></i>{{ s.anzahl | de_zahl }} {{ s.name }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+    </section>
+
+    <!-- VORSCHAU / ANKER FÜR EBENE 2: BEREICHE -->
+    <h2 class="section-title">Bereiche & Quellsysteme</h2>
+    <section class="domain-grid">
+      {% for karte in karten %}
+      <a href="{{ url_for('fehlerliste', bereich=karte.key) }}">
+      <div class="domain-card">
+        <div class="domain-header">
+          <span class="domain-title">{{ karte.titel }}</span>
+          <span class="pill {{ 'bad' if karte.fehler else '' }}">{{ karte.fehler | de_zahl }} Fehler</span>
+        </div>
+        <p class="domain-meta">{{ karte.meta }}</p>
+        <div class="domain-footer">
+          <span>{{ karte.tabellen }} Tabellen</span>
+          <strong>Details &rarr;</strong>
+        </div>
+      </div>
+      </a>
+      {% endfor %}
+    </section>
+  </div>
+
+</body>
+</html>
