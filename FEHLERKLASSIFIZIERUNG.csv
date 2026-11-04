@@ -1,0 +1,42 @@
+SYSTEM;ID;Objekt;Befund;Felder;Klasse;DQ;Ebene;Schwere;Impact;Owner
+SAP;SAP-F01;MARC-FERT;Materialart ERSA im FERT-Blatt;MTART;MASTER;Gültigkeit;E1;hoch;Disposition, Produkt;MDM / Produkt
+SAP;SAP-F02;MARC-FERT;Encoding-/Umlautfehler im Kurztext;MAKTX;FORMAT;Genauigkeit;E1;niedrig–mittel;Marketing, Vertrieb;MDM
+SAP;SAP-F03;MARC-FERT;Bindestrich-/Schreibvarianten im Namen;MAKTX;FORMAT;Konsistenz;E1;niedrig;Marketing;MDM
+SAP;SAP-F04;MARC-FERT;STAWN fehlt;STAWN;KEY;Vollständigkeit;E1;hoch;Zoll/Logistik;Logistik
+SAP;SAP-F05;MARC-FERT;STAWN Format falsch (zu lang / mit Punkten);STAWN;FORMAT;Gültigkeit;E1;hoch;Zoll;Logistik
+SAP;SAP-F06;MARC-FERT;HERKL nicht ISO (Deutschland, nl);HERKL;DOMAIN;Gültigkeit;E1;hoch;Zoll;Logistik
+SAP;SAP-F07;MARC-FERT;LGPRO Klartext/Code-Mix (AUSL/FERT/0001);LGPRO;DOMAIN;Konsistenz;E1;mittel;Disposition;Disposition
+SAP;SAP-F08;MARC-FERT;MMSTA nicht 01/02 bzw. führende Null fehlt;MMSTA;DOMAIN;Gültigkeit;E1;mittel;Disposition;MDM
+SAP;SAP-F09;MARC-FERT;MAABC fehlt;MAABC;KEY;Vollständigkeit;E1;mittel;Disposition;Disposition
+SAP;SAP-F10;MARC-FERT;DISLS außerhalb EX/FX/HB/WB/MB;DISLS;DOMAIN;Gültigkeit;E1;mittel;Disposition;Disposition
+SAP;SAP-F11;MARC-FERT;Negative / unsinnige Losgröße;BSTMI;LOGIC;Genauigkeit;E1;hoch;Disposition;Disposition
+SAP;SAP-F12;MARC-FERT;Unerlaubtes Werk für FERT (z. B. 2100);WERKS;REF;Gültigkeit;E1;mittel–hoch;Disposition;MDM
+SAP;SAP-F13;MARC-FERT;LVORM=X aber MMSTA noch aktiv ohne Regel;LVORM, MMSTA;LOGIC;Konsistenz;E2;hoch;Vertrieb, Marketing;Produkt
+SAP;SAP-F14;MARC-FERT;Eigenfertigungszeit / Planlieferzeit Ausreißer;DZEIT, PLIFZ;LOGIC;Genauigkeit;E1;niedrig–mittel;Disposition;Disposition
+SAP;SAP-E01;MARC-ERSA;MAKTX leer;MAKTX;KEY;Vollständigkeit;E1;hoch;Disposition, Service;MDM
+SAP;SAP-E02;MARC-ERSA;MTART Tippfehler (FRET statt ERSA);MTART;MASTER;Gültigkeit;E1;hoch;Disposition;MDM
+SAP;SAP-E03;MARC-ERSA;Unbekannte Werke (1500, 2300, 9999);WERKS;REF;Gültigkeit;E1;hoch;Disposition, Logistik;MDM
+SAP;SAP-E04;MARC-ERSA;MEINS uneinheitlich (ST/EA/PC/M);MEINS;DOMAIN;Konsistenz;E1;mittel–hoch;Disposition, Controlling;MDM
+SAP;SAP-E05;MARC-ERSA;BESKZ außerhalb E/F/X (z. B. Z, e);BESKZ;DOMAIN;Gültigkeit;E1;mittel;Disposition;Disposition
+SAP;SAP-E06;MARC-ERSA;MAABC ungültig (D, a);MAABC;DOMAIN;Gültigkeit;E1;mittel;Disposition;Disposition
+SAP;SAP-E07;MARC-ERSA;MMSTA ungültig (1, XX);MMSTA;DOMAIN;Gültigkeit;E1;mittel;Disposition;MDM
+SAP;SAP-E08;MARC-ERSA;DISMM=PD auf klassischem Bestellpunkt-Teil;DISMM;LOGIC;Konsistenz;E1;mittel;Disposition;Disposition
+SAP;SAP-E09;MARC-ERSA;Fachliche Dublette (gleicher Kurztext/EAN);MATNR, MAKTX, EAN;DUP;Eindeutigkeit;E2;hoch;Disposition (Kapital);Disposition
+SAP;SAP-E10;MARC-ERSA;Auslauf (LVORM/MMSTA) vs. hoher Meldebestand;LVORM, MINBE;LOGIC;Konsistenz;E2;mittel;Disposition;Disposition
+SAP;SAP-E11;MARC-ERSA;HERKL Schreibvarianten (nl/Netherlands);HERKL;FORMAT;Konsistenz;E1;hoch;Zoll;Logistik
+SAP;SAP-M01;MARA;MATNR in MARC ohne MARA (oder umgekehrt);MATNR;REF;Vollständigkeit;E2;hoch;alle;MDM
+SAP;SAP-M02;MARA;MAKTX/MTART/MATKL weicht von MARC ab;MAKTX, MTART, MATKL;SYNC/LOGIC;Konsistenz;E2;hoch;Sync CRM;MDM
+SAP;SAP-M03;MARA;SPART passt nicht zu MATKL/EXTWG;SPART, MATKL;MASTER;Konsistenz;E2;mittel;Controlling, Produkt;Produkt
+SAP;SAP-M04;MARA;NTGEW > BRGEW;NTGEW, BRGEW;LOGIC;Genauigkeit;E1;hoch;Logistik;Logistik
+SAP;SAP-M05;MARA;EAN11 ungültig / Prüfziffer;EAN11;FORMAT;Gültigkeit;E1;mittel–hoch;Logistik, Vertrieb;MDM
+SAP;SAP-M06;MARA;MSTAE Auslauf inkonsistent zu MARC LVORM/MMSTA;MSTAE, LVORM;LOGIC;Konsistenz;E2;hoch;Vertrieb, Marketing;Produkt
+SAP;SAP-M07;MARA;ERNAM/MDM_LOAD ohne fachliche Nachpflege-Flags;ERNAM;FORMAT;Aktualität;E1;niedrig;Governance;MDM
+SAP;SAP-M08;MARA;KZREV=X ohne Zeichnungsnummer;KZREV, ZEINR;LOGIC;Vollständigkeit;E1;mittel;Compliance, Fertigung;Produkt
+SAP;SAP-X01;Cross (SAP→CRM);FERT in SAP, fehlt in SF und/oder HS;MATNR;SYNC;Konsistenz;E3;hoch;Vertrieb, Marketing;MDM
+SAP;SAP-X02;Cross (SAP→CRM);Name/MAKTX ≠ SF Name ≠ HS name;MAKTX;SYNC;Konsistenz;E3;mittel;Marketing, Vertrieb;MDM
+SAP;SAP-X03;Cross (SAP→CRM);MATKL ≠ SF/HS Warengruppe;MATKL;SYNC;Konsistenz;E3;mittel;Reporting;MDM
+SAP;SAP-X04;Cross (SAP→CRM);Werk ≠ SF/HS Herstellwerk;WERKS;SYNC;Konsistenz;E3;mittel;Service, Logistik;MDM
+SAP;SAP-X05;Cross (SAP→CRM);SAP Auslauf, CRM noch ACTIVE;LVORM/MMSTA vs IsActive/hs_status;SYNC;Konsistenz;E3;hoch;Vertrieb, Marketing;Produkt
+SAP;SAP-X06;Cross (SAP→CRM);SAP aktiv, Katalog INACTIVE / fehlend;Status;SYNC;Konsistenz;E3;hoch;Marketing;Produkt
+SAP;SAP-X07;Cross (SF↔HS);Preis SF ≠ HS;Pricebooks;SYNC;Konsistenz;E3;hoch;Vertrieb (Lena);Vertrieb / MDM
+SAP;SAP-X08;Cross (SAP→CRM);SF ProductCount ≠ 100 SAP FERT;Abdeckung;SYNC;Vollständigkeit;E3;hoch;alle;MDM
