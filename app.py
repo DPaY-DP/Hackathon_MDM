@@ -1,19 +1,19 @@
-"""AgroTechNova Datencheck – Flask-Webanwendung.
+"""AgroTechNova Datencheck – Standalone-Webanwendung.
 
-Die Webseite greift ausschließlich über Flask auf die SQLite-Datenbank
-(data/datencheck.db) zu. Der Browser sieht nie die Datenbank selbst,
-sondern nur die von Flask gerenderten Seiten.
+Frontend (Flask) + Prüfengine + SQLite (data/datencheck.db) in einem Prozess.
+Der Browser sieht nie die Datenbank selbst, sondern nur gerenderte Seiten.
 
 Start:
-    pip install -r requirements.txt
-    python app.py
-    -> http://127.0.0.1:5000
+    install_datencheck.bat   # einmalig
+    start_datencheck.bat     # -> http://127.0.0.1:5000
 """
 
 from __future__ import annotations
 
 import csv
 import sqlite3
+import threading
+import webbrowser
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -22,20 +22,39 @@ from flask import (
     abort,
     flash,
     g,
+    jsonify,
     redirect,
     render_template,
     request,
     url_for,
 )
 
+from datencheck_output_sqlite import OUTPUT_FILE, run_check
 from init_db import DB_PATH, init_database
 
 ROOT = Path(__file__).resolve().parent
 KLASSIFIZIERUNG_CSV = ROOT / "FEHLERKLASSIFIZIERUNG.csv"
+HOST = "127.0.0.1"
+PORT = 5000
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "datencheck-lokal"  # nur für Flash-Meldungen
 app.config["DATABASE"] = DB_PATH
+
+# Hintergrund-Status für den Datencheck (eine Prüfung gleichzeitig)
+_check_lock = threading.Lock()
+_check_state: dict = {
+    "status": "idle",  # idle | running | done | error
+    "running": False,
+    "percent": 0.0,
+    "message": "",
+    "table": "",
+    "error": None,
+    "output": None,
+    "befunde": 0,
+    "last_ok": None,
+    "last_message": None,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -81,8 +100,8 @@ SERVICE_TABELLEN = {"account", "contact", "asset", "workorder"}
 SERVICE_CODES = ("SF-A", "SF-C", "SF-S", "SF-W", "SF-H02", "SF-H03")
 
 # Die vier Bereiche / Unterseiten. Zeilen- und Tabellenzahl beschreiben die
-# Quelldateien (nicht Teil der Fehler-DB). Sie lassen sich über die Tabelle
-# `meta` überschreiben, z. B. key='zeilen_sap', value='2300'.
+# Quelltabellen. Sie werden beim Start aus der DB aktualisiert und liegen in
+# `meta` (key='zeilen_sap' usw.).
 BEREICHE = {
     "sap": {
         "titel": "SAP Materialstamm",
@@ -91,6 +110,7 @@ BEREICHE = {
         "tabellen_text": "MARA, Produkte (FERT), Ersatzteile (ERSA)",
         "tabellen": 3,
         "zeilen": 2220,
+        "db_tabellen": ["MARA", "Produkte_FERT", "Ersatzteile_ERSA"],
     },
     "salesforce_sales": {
         "titel": "Salesforce Sales",
@@ -99,6 +119,7 @@ BEREICHE = {
         "tabellen_text": "Product2, Pricebook2, PricebookEntry",
         "tabellen": 3,
         "zeilen": 311,
+        "db_tabellen": ["Product2", "Pricebook2", "PricebookEntry"],
     },
     "hubspot": {
         "titel": "HubSpot Produktdaten",
@@ -107,6 +128,7 @@ BEREICHE = {
         "tabellen_text": "Products, Price Books, Price Book Items",
         "tabellen": 3,
         "zeilen": 310,
+        "db_tabellen": ["Products", "Price_Books", "Price_Book_Items"],
     },
     "salesforce_service": {
         "titel": "Salesforce Service",
@@ -115,6 +137,7 @@ BEREICHE = {
         "tabellen_text": "Account, Contact, Asset, WorkOrder",
         "tabellen": 4,
         "zeilen": 733,
+        "db_tabellen": ["Account", "Contact", "Asset", "WorkOrder"],
     },
 }
 
@@ -194,6 +217,31 @@ def importiere_fehlerdefinitionen(connection: sqlite3.Connection) -> int:
     return anzahl
 
 
+def aktualisiere_meta_zaehler(connection: sqlite3.Connection) -> None:
+    """Schreibt Ist-Zeilen-/Tabellenzahlen der Quellsysteme in meta."""
+    for key, cfg in BEREICHE.items():
+        tabellen = cfg["db_tabellen"]
+        vorhanden = []
+        zeilen = 0
+        for name in tabellen:
+            try:
+                zeilen += connection.execute(
+                    f'SELECT COUNT(*) FROM "{name}"'
+                ).fetchone()[0]
+                vorhanden.append(name)
+            except sqlite3.Error:
+                continue
+        connection.execute(
+            "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+            (f"zeilen_{key}", str(zeilen if vorhanden else cfg["zeilen"])),
+        )
+        connection.execute(
+            "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+            (f"tabellen_{key}", str(len(vorhanden) if vorhanden else cfg["tabellen"])),
+        )
+    connection.commit()
+
+
 def datenbank_vorbereiten() -> None:
     """Legt die DB an (falls nötig) und befüllt leere Fehlerdefinitionen."""
     db_path = Path(app.config["DATABASE"])
@@ -205,6 +253,7 @@ def datenbank_vorbereiten() -> None:
         leer = connection.execute("SELECT COUNT(*) FROM Fehlerdefinition").fetchone()[0] == 0
         if leer:
             importiere_fehlerdefinitionen(connection)
+        aktualisiere_meta_zaehler(connection)
 
 
 # Felder je Fehlercode (Spalte "Felder" der Klassifizierung) als Vorgabe
@@ -288,6 +337,15 @@ def ist_offen(f: dict) -> bool:
 @app.route("/")
 @app.route("/index.html")
 def index():
+    with _check_lock:
+        check_running = _check_state["running"]
+        last_ok = _check_state["last_ok"]
+        last_message = _check_state["last_message"]
+        if last_message and not check_running:
+            flash(last_message, "ok" if last_ok else "fehler")
+            _check_state["last_message"] = None
+            _check_state["last_ok"] = None
+
     alle = lade_fehler()
     offen = [f for f in alle if ist_offen(f)]
 
@@ -333,6 +391,7 @@ def index():
         stufen=stufen,
         anzahl_hoch=anzahl["hoch"],
         karten=karten,
+        check_running=check_running,
     )
 
 
@@ -397,6 +456,106 @@ def alte_seite(dateiname: str):
     if dateiname in ALTE_DATEINAMEN:
         return redirect(url_for("fehlerliste", bereich=ALTE_DATEINAMEN[dateiname]))
     abort(404)
+
+
+def _check_snapshot() -> dict:
+    with _check_lock:
+        return {
+            "status": _check_state["status"],
+            "running": _check_state["running"],
+            "percent": _check_state["percent"],
+            "message": _check_state["message"],
+            "table": _check_state["table"],
+            "error": _check_state["error"],
+            "output": _check_state["output"],
+            "befunde": _check_state["befunde"],
+        }
+
+
+def _datencheck_job(db_path: Path) -> None:
+    def on_progress(info) -> None:
+        with _check_lock:
+            _check_state["status"] = str(info.get("status") or "running")
+            _check_state["percent"] = float(info.get("percent") or 0)
+            _check_state["message"] = str(info.get("message") or "")
+            _check_state["table"] = str(info.get("table") or "")
+
+    try:
+        output = run_check(
+            db_path=db_path,
+            output_file=OUTPUT_FILE,
+            on_progress=on_progress,
+        )
+        with sqlite3.connect(db_path) as connection:
+            connection.execute("PRAGMA foreign_keys = ON")
+            anzahl = connection.execute("SELECT COUNT(*) FROM Fehlerliste").fetchone()[0]
+            aktualisiere_meta_zaehler(connection)
+        message = (
+            f"Datencheck abgeschlossen: {anzahl} Befunde in der Fehlerliste. "
+            f"Excel-Bericht: {output.name}"
+        )
+        with _check_lock:
+            _check_state["status"] = "done"
+            _check_state["percent"] = 100.0
+            _check_state["message"] = message
+            _check_state["table"] = ""
+            _check_state["error"] = None
+            _check_state["output"] = str(output)
+            _check_state["befunde"] = int(anzahl)
+            _check_state["last_ok"] = True
+            _check_state["last_message"] = message
+    except Exception as error:
+        with _check_lock:
+            _check_state["status"] = "error"
+            _check_state["percent"] = 0.0
+            _check_state["message"] = str(error)
+            _check_state["error"] = str(error)
+            _check_state["last_ok"] = False
+            _check_state["last_message"] = f"Datencheck fehlgeschlagen: {error}"
+    finally:
+        with _check_lock:
+            _check_state["running"] = False
+
+
+@app.get("/datencheck/status")
+def datencheck_status():
+    return jsonify(_check_snapshot())
+
+
+@app.post("/datencheck/starten")
+def datencheck_starten():
+    """Startet den klassifizierten Datencheck im Hintergrund."""
+    wants_json = (
+        "application/json" in (request.headers.get("Accept") or "")
+        or request.headers.get("X-Requested-With") == "fetch"
+    )
+    db_path = Path(app.config["DATABASE"])
+    with _check_lock:
+        if _check_state["running"]:
+            if wants_json:
+                return jsonify(_check_snapshot()), 409
+            flash("Datencheck läuft bereits – bitte warten.", "fehler")
+            return redirect(url_for("index"))
+        _check_state.update(
+            status="running",
+            running=True,
+            percent=0.0,
+            message="Starte Datencheck …",
+            table="",
+            error=None,
+            output=None,
+            befunde=0,
+            last_ok=None,
+            last_message=None,
+        )
+    threading.Thread(target=_datencheck_job, args=(db_path,), daemon=True).start()
+    if wants_json:
+        return jsonify(_check_snapshot())
+    flash(
+        "Datencheck gestartet. Fortschritt erscheint auf der Startseite.",
+        "ok",
+    )
+    return redirect(url_for("index"))
 
 
 @app.post("/fehler/<int:fehlerid>/bearbeiten")
@@ -478,5 +637,11 @@ def de_zahl(wert, nachkomma: int = 0) -> str:
 
 datenbank_vorbereiten()
 
+
+def _browser_oeffnen() -> None:
+    webbrowser.open(f"http://{HOST}:{PORT}/")
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    threading.Timer(0.8, _browser_oeffnen).start()
+    app.run(host=HOST, port=PORT, debug=False, use_reloader=False)

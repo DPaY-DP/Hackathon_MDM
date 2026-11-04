@@ -10,6 +10,26 @@
     "Service_Salesforce": "Service / Kundendienst",
     "Stammdaten_MARC": "Materialwirtschaft / SAP"
   },
+  "department_by_system": {
+    "SAP": "Materialwirtschaft / SAP",
+    "Salesforce": "Vertrieb / CRM",
+    "HubSpot": "Vertrieb / CRM"
+  },
+  "department_by_table": {
+    "MARA": "Materialwirtschaft / SAP",
+    "Produkte_FERT": "Materialwirtschaft / SAP",
+    "Ersatzteile_ERSA": "Materialwirtschaft / SAP",
+    "Product2": "Vertrieb / CRM",
+    "Pricebook2": "Vertrieb / CRM",
+    "PricebookEntry": "Vertrieb / CRM",
+    "Products": "Vertrieb / CRM",
+    "Price_Books": "Vertrieb / CRM",
+    "Price_Book_Items": "Vertrieb / CRM",
+    "Account": "Service / Kundendienst",
+    "Contact": "Service / Kundendienst",
+    "Asset": "Service / Kundendienst",
+    "WorkOrder": "Service / Kundendienst"
+  },
   "priority_by_issue": {
     "Fehlender Wert": "kritisch",
     "Fehlende Spalte": "kritisch",

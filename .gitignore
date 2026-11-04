@@ -225,3 +225,17 @@ data/*.db-journal
 data/*.db-wal
 data/*.db-shm
 
+# Office lock/temp files
+~$*.xlsx
+
+# Root duplicate of Datenmodell/DatenmodellHHN.xlsx
+/DatenmodellHHN.xlsx
+
+# One-off Excel model extracts
+_model_extract/
+
+# Generated Datencheck reports (regenerable)
+datencheck_output_01.xlsx
+datencheck_output_sqlite_01.xlsx
+datencheck_ergebnis*.xlsx
+

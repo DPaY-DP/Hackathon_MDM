@@ -1,4 +1,4 @@
-"""Befüllt die Standalone-DB aus FEHLERKLASSIFIZIERUNG.csv und Dirty-Excels.
+"""Befüllt die Standalone-DB aus FEHLERKLASSIFIZIERUNG.csv und Datenquellen/Dirty_Extended.
 
 Aufruf:
     python load_data.py
@@ -17,24 +17,30 @@ from init_db import DB_PATH, get_connection, init_database
 
 
 ROOT = Path(__file__).resolve().parent
+DATA_DIR = ROOT / "Datenquellen" / "Dirty_Extended"
 CSV_PATH = ROOT / "FEHLERKLASSIFIZIERUNG.csv"
+
+SAP_FILE = DATA_DIR / "AgroTechNova_Stammdaten_MARC_dirty_1.xlsx"
+SF_PRODUCT_FILE = DATA_DIR / "AgroTechNova_Produktdaten_Salesforce_dirty_1.xlsx"
+SF_SERVICE_FILE = DATA_DIR / "AgroTechNova_Service_Salesforce_dirty_1.xlsx"
+HS_FILE = DATA_DIR / "AgroTechNova_Produktdaten_HubSpot_dirty_1.xlsx"
 
 # Reihenfolge: Eltern vor Kindern (für dokumentierte FKs)
 TABLE_SOURCES: list[tuple[str, Path, str, list[str]]] = [
     # table, file, sheet, preferred key columns (for cleanup)
-    ("MARA", ROOT / "AgroTechNova_Stammdaten_MARC_dirty.xlsx", "MARA", ["MATNR"]),
-    ("Produkte_FERT", ROOT / "AgroTechNova_Stammdaten_MARC_dirty.xlsx", "Produkte (FERT)", ["MATNR", "WERKS"]),
-    ("Ersatzteile_ERSA", ROOT / "AgroTechNova_Stammdaten_MARC_dirty.xlsx", "Ersatzteile (ERSA)", ["MATNR", "WERKS"]),
-    ("Account", ROOT / "AgroTechNova_Service_Salesforce_dirty.xlsx", "Account", ["Id"]),
-    ("Product2", ROOT / "AgroTechNova_Produktdaten_Salesforce_dirty.xlsx", "Product2", ["Id"]),
-    ("Pricebook2", ROOT / "AgroTechNova_Produktdaten_Salesforce_dirty.xlsx", "Pricebook2", ["Id"]),
-    ("Contact", ROOT / "AgroTechNova_Service_Salesforce_dirty.xlsx", "Contact", ["Id"]),
-    ("Asset", ROOT / "AgroTechNova_Service_Salesforce_dirty.xlsx", "Asset", ["Id"]),
-    ("WorkOrder", ROOT / "AgroTechNova_Service_Salesforce_dirty.xlsx", "WorkOrder", ["Id"]),
-    ("PricebookEntry", ROOT / "AgroTechNova_Produktdaten_Salesforce_dirty.xlsx", "PricebookEntry", ["Id"]),
-    ("Products", ROOT / "AgroTechNova_Produktdaten_HubSpot_dirty.xlsx", "Products", ["hs_object_id"]),
-    ("Price_Books", ROOT / "AgroTechNova_Produktdaten_HubSpot_dirty.xlsx", "Price Books", ["hs_object_id"]),
-    ("Price_Book_Items", ROOT / "AgroTechNova_Produktdaten_HubSpot_dirty.xlsx", "Price Book Items", ["hs_object_id"]),
+    ("MARA", SAP_FILE, "MARA", ["MATNR"]),
+    ("Produkte_FERT", SAP_FILE, "Produkte (FERT)", ["MATNR", "WERKS"]),
+    ("Ersatzteile_ERSA", SAP_FILE, "Ersatzteile (ERSA)", ["MATNR", "WERKS"]),
+    ("Account", SF_SERVICE_FILE, "Account", ["Id"]),
+    ("Product2", SF_PRODUCT_FILE, "Product2", ["Id"]),
+    ("Pricebook2", SF_PRODUCT_FILE, "Pricebook2", ["Id"]),
+    ("Contact", SF_SERVICE_FILE, "Contact", ["Id"]),
+    ("Asset", SF_SERVICE_FILE, "Asset", ["Id"]),
+    ("WorkOrder", SF_SERVICE_FILE, "WorkOrder", ["Id"]),
+    ("PricebookEntry", SF_PRODUCT_FILE, "PricebookEntry", ["Id"]),
+    ("Products", HS_FILE, "Products", ["hs_object_id"]),
+    ("Price_Books", HS_FILE, "Price Books", ["hs_object_id"]),
+    ("Price_Book_Items", HS_FILE, "Price Book Items", ["hs_object_id"]),
 ]
 
 
@@ -185,6 +191,27 @@ def load_table(
     return len(values)
 
 
+BEREICH_TABELLEN: dict[str, list[str]] = {
+    "sap": ["MARA", "Produkte_FERT", "Ersatzteile_ERSA"],
+    "salesforce_sales": ["Product2", "Pricebook2", "PricebookEntry"],
+    "hubspot": ["Products", "Price_Books", "Price_Book_Items"],
+    "salesforce_service": ["Account", "Contact", "Asset", "WorkOrder"],
+}
+
+
+def write_bereich_meta(connection: sqlite3.Connection, counts: dict[str, int]) -> None:
+    for key, tables in BEREICH_TABELLEN.items():
+        zeilen = sum(counts.get(name, 0) for name in tables)
+        connection.execute(
+            "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+            (f"zeilen_{key}", str(zeilen)),
+        )
+        connection.execute(
+            "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+            (f"tabellen_{key}", str(len(tables))),
+        )
+
+
 def load_all(db_path: Path = DB_PATH) -> dict[str, int]:
     init_database(db_path)
     counts: dict[str, int] = {}
@@ -195,6 +222,7 @@ def load_all(db_path: Path = DB_PATH) -> dict[str, int]:
         for table, file_path, sheet_name, keys in TABLE_SOURCES:
             counts[table] = load_table(connection, table, file_path, sheet_name, keys)
             print(f"  {table}: {counts[table]} Zeilen")
+        write_bereich_meta(connection, counts)
         connection.commit()
     return counts
 

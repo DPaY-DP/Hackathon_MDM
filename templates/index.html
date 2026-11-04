@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <title>Globale Fehlerübersicht</title>
@@ -14,7 +14,33 @@
         <h1>AgroTechNova – Data Quality Audit</h1>
         <p>Stammdaten- & CRM-Analyse über SAP MARC/MARA, Salesforce und HubSpot</p>
       </div>
+      <div class="header-actions">
+        <button type="button" id="btn-datencheck" class="btn-primary"
+                {% if check_running %}disabled{% endif %}>
+          {% if check_running %}Prüfung läuft …{% else %}Datencheck starten{% endif %}
+        </button>
+      </div>
     </header>
+
+    <div id="check-progress" class="check-progress" {% if not check_running %}hidden{% endif %}>
+      <div class="check-progress-head">
+        <strong id="check-progress-title">
+          {% if check_running %}Prüfung läuft …{% else %}Prüfung{% endif %}
+        </strong>
+        <span id="check-progress-percent">0 %</span>
+      </div>
+      <div class="progress-track" aria-hidden="true">
+        <div id="check-progress-fill" class="progress-fill" style="width: 0%;"></div>
+      </div>
+      <p id="check-progress-message" class="check-progress-message">Vorbereitung …</p>
+    </div>
+
+    {% with meldungen = get_flashed_messages(with_categories=true) %}
+      {% for kategorie, text in meldungen %}
+      <div class="flash flash-{{ kategorie }}">{{ text }}</div>
+      {% endfor %}
+    {% endwith %}
+    <div id="check-flash" class="flash" hidden></div>
 
     <!-- EBENE 1: EXECUTIVE KPI-CARDS -->
     <section class="kpi-grid">
@@ -74,6 +100,115 @@
       {% endfor %}
     </section>
   </div>
+
+  <script>
+    (function () {
+      const btn = document.getElementById("btn-datencheck");
+      const panel = document.getElementById("check-progress");
+      const fill = document.getElementById("check-progress-fill");
+      const percentEl = document.getElementById("check-progress-percent");
+      const messageEl = document.getElementById("check-progress-message");
+      const titleEl = document.getElementById("check-progress-title");
+      const flashEl = document.getElementById("check-flash");
+      let timer = null;
+      const startRunning = {{ 'true' if check_running else 'false' }};
+
+      function showFlash(text, ok) {
+        flashEl.hidden = false;
+        flashEl.textContent = text;
+        flashEl.className = "flash " + (ok ? "flash-ok" : "flash-fehler");
+      }
+
+      function render(state) {
+        panel.hidden = false;
+        const pct = Math.max(0, Math.min(100, Number(state.percent) || 0));
+        fill.style.width = pct + "%";
+        percentEl.textContent = pct.toFixed(0) + " %";
+        messageEl.textContent = state.message || (state.table ? ("Tabelle " + state.table) : "…");
+        if (state.status === "running") {
+          titleEl.textContent = "Prüfung läuft …";
+          btn.disabled = true;
+          btn.textContent = "Prüfung läuft …";
+        } else if (state.status === "done") {
+          titleEl.textContent = "Prüfung abgeschlossen";
+          btn.disabled = false;
+          btn.textContent = "Datencheck starten";
+        } else if (state.status === "error") {
+          titleEl.textContent = "Prüfung fehlgeschlagen";
+          btn.disabled = false;
+          btn.textContent = "Datencheck starten";
+        }
+      }
+
+      async function poll() {
+        try {
+          const res = await fetch("{{ url_for('datencheck_status') }}", {
+            headers: { "Accept": "application/json" },
+          });
+          const state = await res.json();
+          render(state);
+          if (state.status === "running") {
+            timer = setTimeout(poll, 400);
+            return;
+          }
+          if (state.status === "done") {
+            showFlash(state.message || "Datencheck abgeschlossen.", true);
+            setTimeout(function () { window.location.reload(); }, 800);
+            return;
+          }
+          if (state.status === "error") {
+            showFlash(state.error || state.message || "Datencheck fehlgeschlagen.", false);
+          }
+        } catch (err) {
+          showFlash("Status konnte nicht gelesen werden: " + err, false);
+          btn.disabled = false;
+          btn.textContent = "Datencheck starten";
+        }
+      }
+
+      btn.addEventListener("click", async function () {
+        flashEl.hidden = true;
+        btn.disabled = true;
+        btn.textContent = "Prüfung läuft …";
+        render({ status: "running", percent: 0, message: "Starte Datencheck …", table: "" });
+        try {
+          const res = await fetch("{{ url_for('datencheck_starten') }}", {
+            method: "POST",
+            headers: {
+              "Accept": "application/json",
+              "X-Requested-With": "fetch",
+            },
+          });
+          const state = await res.json();
+          if (res.status === 409) {
+            showFlash("Datencheck läuft bereits.", false);
+          }
+          render(state);
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(poll, 300);
+        } catch (err) {
+          showFlash("Start fehlgeschlagen: " + err, false);
+          btn.disabled = false;
+          btn.textContent = "Datencheck starten";
+          panel.hidden = true;
+        }
+      });
+
+      if (startRunning) {
+        timer = setTimeout(poll, 200);
+      } else {
+        fetch("{{ url_for('datencheck_status') }}", { headers: { "Accept": "application/json" } })
+          .then(function (r) { return r.json(); })
+          .then(function (state) {
+            if (state.status === "running") {
+              render(state);
+              timer = setTimeout(poll, 300);
+            }
+          })
+          .catch(function () {});
+      }
+    })();
+  </script>
 
 </body>
 </html>
