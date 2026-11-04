@@ -35,14 +35,7 @@
         <span class="kpi-sub">Einzelfehler über alle Prüfdimensionen</span>
       </div>
 
-      <!-- KPI 2: Betroffene Zeilen / Datenqualität -->
-      <div class="kpi-card">
-        <span class="kpi-label">Betroffene Datensätze</span>
-        <div class="kpi-value" id="kpi-dirty-rows">
-          {{ betroffene | de_zahl }} <span style="font-size: 1.1rem; font-weight: 400; color: var(--text-muted);">/ {{ gesamt_zeilen | de_zahl }}</span>
-        </div>
-        <span class="kpi-sub">Saubere Datensätze (Clean Rate): <strong>{{ clean_rate | de_zahl(1) }} %</strong></span>
-      </div>
+
 
       <!-- KPI 3: Schweregrad-Split (doppelte Breite) -->
       <div class="kpi-card kpi-card-wide">
