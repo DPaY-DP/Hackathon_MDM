@@ -16,13 +16,45 @@ ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 DB_PATH = DATA_DIR / "datencheck.db"
 SCHEMA_PATH = ROOT / "schema.sql"
-SCHEMA_VERSION = "1"
+SCHEMA_VERSION = "3"
+
+# Offizielle Power-BI-/Power-Pivot-Beziehungen (Manage Relationships)
+# Format: VonTabelle, VonSpalte, NachTabelle, NachSpalte, Art, Systemkontext
+# Art: FK = in SQLite erzwungen, PowerBI = wie im Modell, ohne harte FK (Dirty Data)
+BEZIEHUNGEN: list[tuple[str, str, str, str, str, str]] = [
+    ("Asset", "AccountId", "Account", "Id", "FK", "Salesforce"),
+    ("Asset", "ContactId", "Contact", "Id", "FK", "Salesforce"),
+    ("Asset", "Product2Id", "Product2", "Id", "FK", "Salesforce"),
+    ("Ersatzteile_ERSA", "MATNR", "MARA", "MATNR", "FK", "SAP"),
+    ("Price_Book_Items", "hs_sku", "Products", "hs_sku", "PowerBI", "HubSpot"),
+    ("Price_Book_Items", "price_book_id", "Price_Books", "hs_object_id", "FK", "HubSpot"),
+    ("PricebookEntry", "Product2Id", "Product2", "Id", "FK", "Salesforce"),
+    ("PricebookEntry", "Pricebook2Id", "Pricebook2", "Id", "FK", "Salesforce"),
+    ("Product2", "ATN_SAP_Materialnummer__c", "MARA", "MATNR", "PowerBI", "Salesforce->SAP"),
+    ("Products", "atn_sap_materialnummer", "MARA", "MATNR", "PowerBI", "HubSpot->SAP"),
+    ("Produkte_FERT", "MATNR", "MARA", "MATNR", "FK", "SAP"),
+    ("WorkOrder", "AssetId", "Asset", "Id", "FK", "Salesforce"),
+    # DQ-Modell (nicht aus Power BI)
+    ("Fehlerliste", "Fehlercode", "Fehlerdefinition", "Fehlercode", "FK", "DQ"),
+]
 
 
 def get_connection(db_path: Path = DB_PATH) -> sqlite3.Connection:
     connection = sqlite3.connect(db_path)
     connection.execute("PRAGMA foreign_keys = ON")
     return connection
+
+
+def seed_beziehungen(connection: sqlite3.Connection) -> None:
+    connection.execute("DELETE FROM Beziehung")
+    connection.executemany(
+        """
+        INSERT INTO Beziehung (
+            VonTabelle, VonSpalte, NachTabelle, NachSpalte, Art, Systemkontext
+        ) VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        BEZIEHUNGEN,
+    )
 
 
 def init_database(
@@ -38,6 +70,7 @@ def init_database(
 
     with get_connection(db_path) as connection:
         connection.executescript(schema_sql)
+        seed_beziehungen(connection)
         connection.execute(
             "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
             ("schema_version", SCHEMA_VERSION),

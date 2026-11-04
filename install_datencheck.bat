@@ -10,6 +10,12 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+python load_data.py
+if errorlevel 1 (
+  echo Datenladung fehlgeschlagen.
+  pause
+  exit /b 1
+)
 echo.
 echo Installation abgeschlossen. Datenbank: data\datencheck.db
 echo Start mit: .venv\Scripts\python.exe datencheck_app.py
