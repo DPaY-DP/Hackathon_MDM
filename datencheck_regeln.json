@@ -1,0 +1,24 @@
+{
+  "ignored_sheets": [
+    "Uebersicht",
+    "Feldlegende"
+  ],
+  "default_department": "Datenmanagement (MDM)",
+  "department_by_file": {
+    "Produktdaten_HubSpot": "Vertrieb / CRM",
+    "Produktdaten_Salesforce": "Vertrieb / CRM",
+    "Service_Salesforce": "Service / Kundendienst",
+    "Stammdaten_MARC": "Materialwirtschaft / SAP"
+  },
+  "priority_by_issue": {
+    "Fehlender Wert": "kritisch",
+    "Fehlende Spalte": "kritisch",
+    "Doppelter Schlüssel": "kritisch",
+    "Ungültiges Datum": "kritisch",
+    "Unbekannter Wert": "kritisch",
+    "Schreibvariante": "ignorieren",
+    "Überflüssige Leerzeichen": "ignorieren"
+  },
+  "required_columns": {},
+  "allowed_values": {}
+}
