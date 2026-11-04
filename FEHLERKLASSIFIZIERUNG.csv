@@ -1,42 +1,89 @@
 SYSTEM;ID;Objekt;Befund;Felder;Klasse;DQ;Ebene;Schwere;Impact;Owner
-SAP;SAP-F01;MARC-FERT;Materialart ERSA im FERT-Blatt;MTART;MASTER;Gültigkeit;E1;hoch;Disposition, Produkt;MDM / Produkt
-SAP;SAP-F02;MARC-FERT;Encoding-/Umlautfehler im Kurztext;MAKTX;FORMAT;Genauigkeit;E1;niedrig–mittel;Marketing, Vertrieb;MDM
-SAP;SAP-F03;MARC-FERT;Bindestrich-/Schreibvarianten im Namen;MAKTX;FORMAT;Konsistenz;E1;niedrig;Marketing;MDM
-SAP;SAP-F04;MARC-FERT;STAWN fehlt;STAWN;KEY;Vollständigkeit;E1;hoch;Zoll/Logistik;Logistik
-SAP;SAP-F05;MARC-FERT;STAWN Format falsch (zu lang / mit Punkten);STAWN;FORMAT;Gültigkeit;E1;hoch;Zoll;Logistik
-SAP;SAP-F06;MARC-FERT;HERKL nicht ISO (Deutschland, nl);HERKL;DOMAIN;Gültigkeit;E1;hoch;Zoll;Logistik
-SAP;SAP-F07;MARC-FERT;LGPRO Klartext/Code-Mix (AUSL/FERT/0001);LGPRO;DOMAIN;Konsistenz;E1;mittel;Disposition;Disposition
+SAP;SAP-F01;MARC-FERT;Materialart ERSA im FERT-Blatt;MTART;MASTER;Gültigkeit;E1;hoch;Disposition, Produkt;PRODUKT
+SAP;SAP-F02;MARC-FERT;Encoding-/Umlautfehler im Kurztext;MAKTX;FORMAT;Genauigkeit;E1;niedrig–mittel;Marketing, Vertrieb;PRODUKT
+SAP;SAP-F03;MARC-FERT;Bindestrich-/Schreibvarianten im Namen;MAKTX;FORMAT;Konsistenz;E1;niedrig;Marketing;PRODUKT
+SAP;SAP-F04;MARC-FERT;STAWN fehlt;STAWN;KEY;Vollständigkeit;E1;hoch;Zoll/Logistik;LOGISTIK
+SAP;SAP-F05;MARC-FERT;STAWN Format falsch (zu lang / mit Punkten);STAWN;FORMAT;Gültigkeit;E1;hoch;Zoll;LOGISTIK
+SAP;SAP-F06;MARC-FERT;HERKL nicht ISO (Deutschland, nl);HERKL;DOMAIN;Gültigkeit;E1;hoch;Zoll;LOGISTIK
+SAP;SAP-F07;MARC-FERT;LGPRO Klartext/Code-Mix (AUSL/FERT/0001);LGPRO;DOMAIN;Konsistenz;E1;mittel;Disposition;DISPO
 SAP;SAP-F08;MARC-FERT;MMSTA nicht 01/02 bzw. führende Null fehlt;MMSTA;DOMAIN;Gültigkeit;E1;mittel;Disposition;MDM
-SAP;SAP-F09;MARC-FERT;MAABC fehlt;MAABC;KEY;Vollständigkeit;E1;mittel;Disposition;Disposition
-SAP;SAP-F10;MARC-FERT;DISLS außerhalb EX/FX/HB/WB/MB;DISLS;DOMAIN;Gültigkeit;E1;mittel;Disposition;Disposition
-SAP;SAP-F11;MARC-FERT;Negative / unsinnige Losgröße;BSTMI;LOGIC;Genauigkeit;E1;hoch;Disposition;Disposition
+SAP;SAP-F09;MARC-FERT;MAABC fehlt;MAABC;KEY;Vollständigkeit;E1;mittel;Disposition;DISPO
+SAP;SAP-F10;MARC-FERT;DISLS außerhalb EX/FX/HB/WB/MB;DISLS;DOMAIN;Gültigkeit;E1;mittel;Disposition;DISPO
+SAP;SAP-F11;MARC-FERT;Negative / unsinnige Losgröße;BSTMI;LOGIC;Genauigkeit;E1;hoch;Disposition;DISPO
 SAP;SAP-F12;MARC-FERT;Unerlaubtes Werk für FERT (z. B. 2100);WERKS;REF;Gültigkeit;E1;mittel–hoch;Disposition;MDM
-SAP;SAP-F13;MARC-FERT;LVORM=X aber MMSTA noch aktiv ohne Regel;LVORM, MMSTA;LOGIC;Konsistenz;E2;hoch;Vertrieb, Marketing;Produkt
-SAP;SAP-F14;MARC-FERT;Eigenfertigungszeit / Planlieferzeit Ausreißer;DZEIT, PLIFZ;LOGIC;Genauigkeit;E1;niedrig–mittel;Disposition;Disposition
-SAP;SAP-E01;MARC-ERSA;MAKTX leer;MAKTX;KEY;Vollständigkeit;E1;hoch;Disposition, Service;MDM
+SAP;SAP-F13;MARC-FERT;LVORM=X aber MMSTA noch aktiv ohne Regel;LVORM, MMSTA;LOGIC;Konsistenz;E2;hoch;Vertrieb, Marketing;PRODUKT
+SAP;SAP-F14;MARC-FERT;Eigenfertigungszeit / Planlieferzeit Ausreißer;DZEIT, PLIFZ;LOGIC;Genauigkeit;E1;niedrig–mittel;Disposition;DISPO
+SAP;SAP-E01;MARC-ERSA;MAKTX leer;MAKTX;KEY;Vollständigkeit;E1;hoch;Disposition, Service;PRODUKT
 SAP;SAP-E02;MARC-ERSA;MTART Tippfehler (FRET statt ERSA);MTART;MASTER;Gültigkeit;E1;hoch;Disposition;MDM
 SAP;SAP-E03;MARC-ERSA;Unbekannte Werke (1500, 2300, 9999);WERKS;REF;Gültigkeit;E1;hoch;Disposition, Logistik;MDM
 SAP;SAP-E04;MARC-ERSA;MEINS uneinheitlich (ST/EA/PC/M);MEINS;DOMAIN;Konsistenz;E1;mittel–hoch;Disposition, Controlling;MDM
-SAP;SAP-E05;MARC-ERSA;BESKZ außerhalb E/F/X (z. B. Z, e);BESKZ;DOMAIN;Gültigkeit;E1;mittel;Disposition;Disposition
-SAP;SAP-E06;MARC-ERSA;MAABC ungültig (D, a);MAABC;DOMAIN;Gültigkeit;E1;mittel;Disposition;Disposition
+SAP;SAP-E05;MARC-ERSA;BESKZ außerhalb E/F/X (z. B. Z, e);BESKZ;DOMAIN;Gültigkeit;E1;mittel;Disposition;DISPO
+SAP;SAP-E06;MARC-ERSA;MAABC ungültig (D, a);MAABC;DOMAIN;Gültigkeit;E1;mittel;Disposition;DISPO
 SAP;SAP-E07;MARC-ERSA;MMSTA ungültig (1, XX);MMSTA;DOMAIN;Gültigkeit;E1;mittel;Disposition;MDM
-SAP;SAP-E08;MARC-ERSA;DISMM=PD auf klassischem Bestellpunkt-Teil;DISMM;LOGIC;Konsistenz;E1;mittel;Disposition;Disposition
-SAP;SAP-E09;MARC-ERSA;Fachliche Dublette (gleicher Kurztext/EAN);MATNR, MAKTX, EAN;DUP;Eindeutigkeit;E2;hoch;Disposition (Kapital);Disposition
-SAP;SAP-E10;MARC-ERSA;Auslauf (LVORM/MMSTA) vs. hoher Meldebestand;LVORM, MINBE;LOGIC;Konsistenz;E2;mittel;Disposition;Disposition
-SAP;SAP-E11;MARC-ERSA;HERKL Schreibvarianten (nl/Netherlands);HERKL;FORMAT;Konsistenz;E1;hoch;Zoll;Logistik
+SAP;SAP-E08;MARC-ERSA;DISMM=PD auf klassischem Bestellpunkt-Teil;DISMM;LOGIC;Konsistenz;E1;mittel;Disposition;DISPO
+SAP;SAP-E09;MARC-ERSA;Fachliche Dublette (gleicher Kurztext/EAN);MATNR, MAKTX, EAN;DUP;Eindeutigkeit;E2;hoch;Disposition (Kapital);DISPO
+SAP;SAP-E10;MARC-ERSA;Auslauf (LVORM/MMSTA) vs. hoher Meldebestand;LVORM, MINBE;LOGIC;Konsistenz;E2;mittel;Disposition;DISPO
+SAP;SAP-E11;MARC-ERSA;HERKL Schreibvarianten (nl/Netherlands);HERKL;FORMAT;Konsistenz;E1;hoch;Zoll;LOGISTIK
 SAP;SAP-M01;MARA;MATNR in MARC ohne MARA (oder umgekehrt);MATNR;REF;Vollständigkeit;E2;hoch;alle;MDM
 SAP;SAP-M02;MARA;MAKTX/MTART/MATKL weicht von MARC ab;MAKTX, MTART, MATKL;SYNC/LOGIC;Konsistenz;E2;hoch;Sync CRM;MDM
-SAP;SAP-M03;MARA;SPART passt nicht zu MATKL/EXTWG;SPART, MATKL;MASTER;Konsistenz;E2;mittel;Controlling, Produkt;Produkt
-SAP;SAP-M04;MARA;NTGEW > BRGEW;NTGEW, BRGEW;LOGIC;Genauigkeit;E1;hoch;Logistik;Logistik
-SAP;SAP-M05;MARA;EAN11 ungültig / Prüfziffer;EAN11;FORMAT;Gültigkeit;E1;mittel–hoch;Logistik, Vertrieb;MDM
-SAP;SAP-M06;MARA;MSTAE Auslauf inkonsistent zu MARC LVORM/MMSTA;MSTAE, LVORM;LOGIC;Konsistenz;E2;hoch;Vertrieb, Marketing;Produkt
+SAP;SAP-M03;MARA;SPART passt nicht zu MATKL/EXTWG;SPART, MATKL;MASTER;Konsistenz;E2;mittel;Controlling, Produkt;PRODUKT
+SAP;SAP-M04;MARA;NTGEW > BRGEW;NTGEW, BRGEW;LOGIC;Genauigkeit;E1;hoch;Logistik;LOGISTIK
+SAP;SAP-M05;MARA;EAN11 ungültig / Prüfziffer;EAN11;FORMAT;Gültigkeit;E1;mittel–hoch;Logistik, Vertrieb;LOGISTIK
+SAP;SAP-M06;MARA;MSTAE Auslauf inkonsistent zu MARC LVORM/MMSTA;MSTAE, LVORM;LOGIC;Konsistenz;E2;hoch;Vertrieb, Marketing;PRODUKT
 SAP;SAP-M07;MARA;ERNAM/MDM_LOAD ohne fachliche Nachpflege-Flags;ERNAM;FORMAT;Aktualität;E1;niedrig;Governance;MDM
-SAP;SAP-M08;MARA;KZREV=X ohne Zeichnungsnummer;KZREV, ZEINR;LOGIC;Vollständigkeit;E1;mittel;Compliance, Fertigung;Produkt
+SAP;SAP-M08;MARA;KZREV=X ohne Zeichnungsnummer;KZREV, ZEINR;LOGIC;Vollständigkeit;E1;mittel;Compliance, Fertigung;PRODUKT
 SAP;SAP-X01;Cross (SAP→CRM);FERT in SAP, fehlt in SF und/oder HS;MATNR;SYNC;Konsistenz;E3;hoch;Vertrieb, Marketing;MDM
 SAP;SAP-X02;Cross (SAP→CRM);Name/MAKTX ≠ SF Name ≠ HS name;MAKTX;SYNC;Konsistenz;E3;mittel;Marketing, Vertrieb;MDM
 SAP;SAP-X03;Cross (SAP→CRM);MATKL ≠ SF/HS Warengruppe;MATKL;SYNC;Konsistenz;E3;mittel;Reporting;MDM
 SAP;SAP-X04;Cross (SAP→CRM);Werk ≠ SF/HS Herstellwerk;WERKS;SYNC;Konsistenz;E3;mittel;Service, Logistik;MDM
-SAP;SAP-X05;Cross (SAP→CRM);SAP Auslauf, CRM noch ACTIVE;LVORM/MMSTA vs IsActive/hs_status;SYNC;Konsistenz;E3;hoch;Vertrieb, Marketing;Produkt
-SAP;SAP-X06;Cross (SAP→CRM);SAP aktiv, Katalog INACTIVE / fehlend;Status;SYNC;Konsistenz;E3;hoch;Marketing;Produkt
-SAP;SAP-X07;Cross (SF↔HS);Preis SF ≠ HS;Pricebooks;SYNC;Konsistenz;E3;hoch;Vertrieb (Lena);Vertrieb / MDM
+SAP;SAP-X05;Cross (SAP→CRM);SAP Auslauf, CRM noch ACTIVE;LVORM/MMSTA vs IsActive/hs_status;SYNC;Konsistenz;E3;hoch;Vertrieb, Marketing;PRODUKT
+SAP;SAP-X06;Cross (SAP→CRM);SAP aktiv, Katalog INACTIVE / fehlend;Status;SYNC;Konsistenz;E3;hoch;Marketing;PRODUKT
+SAP;SAP-X07;Cross (SF↔HS);Preis SF ≠ HS;Pricebooks;SYNC;Konsistenz;E3;hoch;Vertrieb (Lena);VERTRIEB
 SAP;SAP-X08;Cross (SAP→CRM);SF ProductCount ≠ 100 SAP FERT;Abdeckung;SYNC;Vollständigkeit;E3;hoch;alle;MDM
+HubSpot;HS-P01;Products;hs_object_id mit Prefix HS- statt rein numerisch;hs_object_id;FORMAT;Gültigkeit;E1;mittel;Sync, Integrationen;MDM
+HubSpot;HS-P02;Products;name fehlt;name;KEY;Vollständigkeit;E1;hoch;Marketing, Katalog;MARKETING
+HubSpot;HS-P03;Products;Leading/Trailing/Doppel-Leerzeichen im Namen;name;FORMAT;Konsistenz;E1;niedrig;Marketing;MARKETING
+HubSpot;HS-P04;Products;Encoding-/Umlautfehler im Namen;name;FORMAT;Genauigkeit;E1;mittel;Marketing, Vertrieb;MARKETING
+HubSpot;HS-P05;Products;Schreibvarianten / Case-Mix im Namen (ALL CAPS, Bindestrich);name;FORMAT;Konsistenz;E1;niedrig;Marketing;MARKETING
+HubSpot;HS-P06;Products;description fehlt;description;KEY;Vollständigkeit;E1;mittel;Marketing, Katalog;MARKETING
+HubSpot;HS-P07;Products;Placeholder-Beschreibung (TBD, Lorem ipsum);description;FORMAT;Genauigkeit;E1;mittel;Marketing;MARKETING
+HubSpot;HS-P08;Products;hs_sku nicht im Muster ATN-###### (kurz/lowercase);hs_sku;FORMAT;Gültigkeit;E1;hoch;Vertrieb, Sync;MDM
+HubSpot;HS-P09;Products;Doppelte hs_sku;hs_sku;DUP;Eindeutigkeit;E1;hoch;Vertrieb, Katalog;MDM
+HubSpot;HS-P10;Products;hs_status außerhalb ACTIVE/INACTIVE (Active, aktiv);hs_status;DOMAIN;Gültigkeit;E1;mittel–hoch;Marketing, Vertrieb;MARKETING
+HubSpot;HS-P11;Products;hs_product_type außerhalb INVENTORY (GOODS, Hardware, inventory);hs_product_type;DOMAIN;Gültigkeit;E1;mittel;Katalog, Reporting;MARKETING
+HubSpot;HS-P12;Products;hs_pricing_model Tippfehler/Case (FLATT, flat);hs_pricing_model;DOMAIN;Gültigkeit;E1;niedrig–mittel;Pricing;VERTRIEB
+HubSpot;HS-P13;Products;hs_tax_category Klartext statt Code (Standardsatz);hs_tax_category;DOMAIN;Konsistenz;E1;niedrig;Controlling;VERTRIEB
+HubSpot;HS-P14;Products;price als lokal formatierter Text inkl. Währung;price;FORMAT;Gültigkeit;E1;hoch;Vertrieb, Katalog;VERTRIEB
+HubSpot;HS-P15;Products;price = 0 bei aktivem Produkt;price;LOGIC;Genauigkeit;E1;hoch;Vertrieb (Lena);VERTRIEB
+HubSpot;HS-P16;Products;price negativ;price;LOGIC;Genauigkeit;E1;hoch;Controlling, Vertrieb;VERTRIEB
+HubSpot;HS-P17;Products;hs_cost_of_goods_sold fehlt;hs_cost_of_goods_sold;KEY;Vollständigkeit;E1;mittel;Controlling;VERTRIEB
+HubSpot;HS-P18;Products;Verkaufspreis < COGS (Marge negativ);price, hs_cost_of_goods_sold;LOGIC;Genauigkeit;E1;hoch;Controlling (Felix);VERTRIEB
+HubSpot;HS-P19;Products;hs_url mit http:// statt https:// oder trailing space;hs_url;FORMAT;Gültigkeit;E1;niedrig–mittel;Marketing;MARKETING
+HubSpot;HS-P20;Products;hubspot_owner_id mit Prefix owner_ / ungültiges Format;hubspot_owner_id;FORMAT;Gültigkeit;E1;mittel;Governance;MARKETING
+HubSpot;HS-P21;Products;hubspot_owner_id fehlt;hubspot_owner_id;KEY;Vollständigkeit;E1;niedrig–mittel;Governance;MARKETING
+HubSpot;HS-P22;Products;createdate nicht ISO (DD/MM/YYYY);createdate;FORMAT;Gültigkeit;E1;niedrig;Reporting;MARKETING
+HubSpot;HS-P23;Products;hs_object_source_label Schreibvarianten (SAP MDM Sync vs sap mdm);hs_object_source_label;FORMAT;Konsistenz;E1;niedrig;Governance;MDM
+HubSpot;HS-P24;Products;atn_sap_materialnummer fehlt;atn_sap_materialnummer;KEY;Vollständigkeit;E1;hoch;Sync SAP;MDM
+HubSpot;HS-P25;Products;atn_sap_materialnummer zu kurz / abgeschnitten;atn_sap_materialnummer;FORMAT;Gültigkeit;E1;hoch;Sync SAP;MDM
+HubSpot;HS-P26;Products;atn_herstellwerk ungültig (1050, ABC);atn_herstellwerk;MASTER;Gültigkeit;E1;mittel–hoch;Sync SAP, Logistik;MDM
+HubSpot;HS-B01;Price Books;Währung uneinheitlich (EURO vs EUR);hs_supported_currencies;DOMAIN;Konsistenz;E1;mittel;Pricing, Vertrieb;VERTRIEB
+HubSpot;HS-B02;Price Books;archived=True aber hs_status=ACTIVE;archived, hs_status;LOGIC;Konsistenz;E1;hoch;Katalog, Vertrieb;MARKETING
+HubSpot;HS-B03;Price Books;hs_count_of_included_products weicht von tatsächlicher Item-Anzahl ab;hs_count_of_included_products;LOGIC;Genauigkeit;E2;mittel;Pricing;MARKETING
+HubSpot;HS-I01;Price Book Items;price_book_id zeigt auf unbekanntes Preisbuch;price_book_id;REF;Vollständigkeit;E2;hoch;Pricing;VERTRIEB
+HubSpot;HS-I02;Price Book Items;hs_associated_product_id orphan (kein Product);hs_associated_product_id;REF;Vollständigkeit;E2;hoch;Katalog, Pricing;MDM
+HubSpot;HS-I03;Price Book Items;hs_price_eur negativ oder als Text formatiert;hs_price_eur;FORMAT/LOGIC;Genauigkeit;E1;hoch;Vertrieb;VERTRIEB
+HubSpot;HS-I04;Price Book Items;hs_status außerhalb ACTIVE/INACTIVE (ARCHIVED);hs_status;DOMAIN;Gültigkeit;E1;mittel;Pricing;MARKETING
+HubSpot;HS-I05;Price Book Items;hs_sku weicht vom zugehörigen Product ab;hs_sku;SYNC;Konsistenz;E2;hoch;Sync, Vertrieb;MDM
+HubSpot;HS-I06;Price Book Items;Produkt hat nicht beide Preisbücher (Standard + Händler);price_book_id;REF;Vollständigkeit;E2;hoch;Vertrieb (Lena);VERTRIEB
+HubSpot;HS-H01;Cross (HS intern);Products.price ≠ Standard-Preisbuch-Item;price, hs_price_eur;SYNC;Konsistenz;E2;hoch;Vertrieb, Katalog;VERTRIEB
+HubSpot;HS-H02;Cross (HS intern);Händlerpreis > Listenpreis;hs_price_eur;LOGIC;Genauigkeit;E2;hoch;Vertrieb;VERTRIEB
+HubSpot;HS-H03;Cross (HS intern);Product INACTIVE, Items noch ACTIVE;hs_status;LOGIC;Konsistenz;E2;mittel–hoch;Marketing;MARKETING
+HubSpot;HS-H04;Cross (HS intern);Name Product ≠ Name Price Book Item;name, hs_name;SYNC;Konsistenz;E2;niedrig–mittel;Katalog;MARKETING
+HubSpot;HS-X01;Cross (→SAP);HubSpot-Produkt ohne / mit falscher SAP-MATNR;atn_sap_materialnummer;SYNC;Konsistenz;E3;hoch;Sync, Produkt;MDM
+HubSpot;HS-X02;Cross (→SAP);Name weicht von SAP MAKTX ab;name;SYNC;Konsistenz;E3;mittel;Marketing (Jonas);MDM
+HubSpot;HS-X03;Cross (→SAP);Warengruppe weicht von SAP MATKL ab;atn_sap_warengruppe;SYNC;Konsistenz;E3;mittel;Reporting;MDM
+HubSpot;HS-X04;Cross (→SAP);Herstellwerk weicht von SAP WERKS ab;atn_herstellwerk;SYNC;Konsistenz;E3;mittel;Logistik;MDM
+HubSpot;HS-X05;Cross (→SAP);SAP Auslauf, HubSpot noch ACTIVE;hs_status;SYNC;Konsistenz;E3;hoch;Marketing (Jonas);PRODUKT
+HubSpot;HS-X06;Cross (→SF);Listenpreis HubSpot ≠ Salesforce Standard Price Book;price / hs_price_eur;SYNC;Konsistenz;E3;hoch;Vertrieb (Lena);VERTRIEB
+HubSpot;HS-X07;Cross (→SF);Händlerpreis HubSpot ≠ Salesforce Händlerpreisliste;hs_price_eur;SYNC;Konsistenz;E3;hoch;Vertrieb;VERTRIEB
+HubSpot;HS-X08;Cross (→SF/SAP);Abdeckung ≠ 100 FERT (fehlende/überzählige Produkte);hs_sku / MATNR;SYNC;Vollständigkeit;E3;hoch;alle;MDM
