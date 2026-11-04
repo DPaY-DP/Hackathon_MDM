@@ -1,4 +1,6 @@
-# Fehlerklassifizierung SAP
+# Fehlerklassifizierung
+
+Einheitliche Befundkatalog für **SAP**, **HubSpot** und **Salesforce**.
 
 Maschinell lesbare Quelle: **FEHLERKLASSIFIZIERUNG.csv** (Delimiter ;, UTF-8).
 
@@ -7,7 +9,11 @@ import pandas as pd
 df = pd.read_csv("FEHLERKLASSIFIZIERUNG.csv", sep=";", encoding="utf-8")
 `
 
-**Owner-Codes** (genau einer pro Befund) — siehe OWNER_VORSCHLAG.md:
+**Gesamt:** 171 Befunde — SAP 41 · HubSpot 47 · Salesforce 83
+
+## Owner-Codes
+
+Genau ein Owner pro Befund (siehe OWNER_VORSCHLAG.md):
 
 | Code | Bereich |
 |------|---------|
@@ -20,10 +26,65 @@ df = pd.read_csv("FEHLERKLASSIFIZIERUNG.csv", sep=";", encoding="utf-8")
 | SERVICE | Field Service |
 | CUSTOMER | Customer Success / Kundenstamm |
 
-## Übersicht
+## Fehlerklassen
+
+| Code | Bedeutung |
+|------|-----------|
+| KEY | Schlüssel-/Identitätsfehler, Pflichtfeld |
+| REF | Referenzbruch |
+| DOMAIN | Wertebereich / Customizing / Picklist |
+| FORMAT | Darstellung / Format |
+| LOGIC | Fachliche Plausibilität |
+| DUP | Dublette |
+| SYNC | Abgleich intern oder systemübergreifend |
+| MASTER | Führende Stammdaten-Regel |
+
+## Ebenen
+
+| Ebene | Bedeutung |
+|-------|-----------|
+| E1 | Einzelne Tabelle |
+| E2 | Innerhalb eines Systems |
+| E3 | Systemübergreifend |
+
+## ID-Prefixe
+
+| Prefix | System / Objekt |
+|--------|-----------------|
+| SAP-F* | SAP MARC Fertigerzeugnisse |
+| SAP-E* | SAP MARC Ersatzteile |
+| SAP-M* | SAP MARA |
+| SAP-X* | SAP Cross → CRM |
+| HS-P* | HubSpot Products |
+| HS-B* | HubSpot Price Books |
+| HS-I* | HubSpot Price Book Items |
+| HS-H* | HubSpot intern |
+| HS-X* | HubSpot Cross → SAP/SF |
+| SF-P* | Salesforce Product2 |
+| SF-B* | Salesforce Pricebook2 |
+| SF-E* | Salesforce PricebookEntry |
+| SF-A* | Salesforce Account |
+| SF-C* | Salesforce Contact |
+| SF-S* | Salesforce Asset |
+| SF-W* | Salesforce WorkOrder |
+| SF-H* | Salesforce intern |
+| SF-X* | Salesforce Cross → SAP/HS |
+
+## Übersicht (alle Systeme)
 
 | SYSTEM | ID | Objekt | Befund | Felder | Klasse | DQ | Ebene | Schwere | Impact | Owner |
 |--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
+| SAP | SAP-E01 | MARC-ERSA | MAKTX leer | MAKTX | KEY | Vollständigkeit | E1 | hoch | Disposition, Service | PRODUKT |
+| SAP | SAP-E02 | MARC-ERSA | MTART Tippfehler (FRET statt ERSA) | MTART | MASTER | Gültigkeit | E1 | hoch | Disposition | MDM |
+| SAP | SAP-E03 | MARC-ERSA | Unbekannte Werke (1500, 2300, 9999) | WERKS | REF | Gültigkeit | E1 | hoch | Disposition, Logistik | MDM |
+| SAP | SAP-E04 | MARC-ERSA | MEINS uneinheitlich (ST/EA/PC/M) | MEINS | DOMAIN | Konsistenz | E1 | mittel–hoch | Disposition, Controlling | MDM |
+| SAP | SAP-E05 | MARC-ERSA | BESKZ außerhalb E/F/X (z. B. Z, e) | BESKZ | DOMAIN | Gültigkeit | E1 | mittel | Disposition | DISPO |
+| SAP | SAP-E06 | MARC-ERSA | MAABC ungültig (D, a) | MAABC | DOMAIN | Gültigkeit | E1 | mittel | Disposition | DISPO |
+| SAP | SAP-E07 | MARC-ERSA | MMSTA ungültig (1, XX) | MMSTA | DOMAIN | Gültigkeit | E1 | mittel | Disposition | MDM |
+| SAP | SAP-E08 | MARC-ERSA | DISMM=PD auf klassischem Bestellpunkt-Teil | DISMM | LOGIC | Konsistenz | E1 | mittel | Disposition | DISPO |
+| SAP | SAP-E09 | MARC-ERSA | Fachliche Dublette (gleicher Kurztext/EAN) | MATNR, MAKTX, EAN | DUP | Eindeutigkeit | E2 | hoch | Disposition (Kapital) | DISPO |
+| SAP | SAP-E10 | MARC-ERSA | Auslauf (LVORM/MMSTA) vs. hoher Meldebestand | LVORM, MINBE | LOGIC | Konsistenz | E2 | mittel | Disposition | DISPO |
+| SAP | SAP-E11 | MARC-ERSA | HERKL Schreibvarianten (nl/Netherlands) | HERKL | FORMAT | Konsistenz | E1 | hoch | Zoll | LOGISTIK |
 | SAP | SAP-F01 | MARC-FERT | Materialart ERSA im FERT-Blatt | MTART | MASTER | Gültigkeit | E1 | hoch | Disposition, Produkt | PRODUKT |
 | SAP | SAP-F02 | MARC-FERT | Encoding-/Umlautfehler im Kurztext | MAKTX | FORMAT | Genauigkeit | E1 | niedrig–mittel | Marketing, Vertrieb | PRODUKT |
 | SAP | SAP-F03 | MARC-FERT | Bindestrich-/Schreibvarianten im Namen | MAKTX | FORMAT | Konsistenz | E1 | niedrig | Marketing | PRODUKT |
@@ -38,17 +99,6 @@ df = pd.read_csv("FEHLERKLASSIFIZIERUNG.csv", sep=";", encoding="utf-8")
 | SAP | SAP-F12 | MARC-FERT | Unerlaubtes Werk für FERT (z. B. 2100) | WERKS | REF | Gültigkeit | E1 | mittel–hoch | Disposition | MDM |
 | SAP | SAP-F13 | MARC-FERT | LVORM=X aber MMSTA noch aktiv ohne Regel | LVORM, MMSTA | LOGIC | Konsistenz | E2 | hoch | Vertrieb, Marketing | PRODUKT |
 | SAP | SAP-F14 | MARC-FERT | Eigenfertigungszeit / Planlieferzeit Ausreißer | DZEIT, PLIFZ | LOGIC | Genauigkeit | E1 | niedrig–mittel | Disposition | DISPO |
-| SAP | SAP-E01 | MARC-ERSA | MAKTX leer | MAKTX | KEY | Vollständigkeit | E1 | hoch | Disposition, Service | PRODUKT |
-| SAP | SAP-E02 | MARC-ERSA | MTART Tippfehler (FRET statt ERSA) | MTART | MASTER | Gültigkeit | E1 | hoch | Disposition | MDM |
-| SAP | SAP-E03 | MARC-ERSA | Unbekannte Werke (1500, 2300, 9999) | WERKS | REF | Gültigkeit | E1 | hoch | Disposition, Logistik | MDM |
-| SAP | SAP-E04 | MARC-ERSA | MEINS uneinheitlich (ST/EA/PC/M) | MEINS | DOMAIN | Konsistenz | E1 | mittel–hoch | Disposition, Controlling | MDM |
-| SAP | SAP-E05 | MARC-ERSA | BESKZ außerhalb E/F/X (z. B. Z, e) | BESKZ | DOMAIN | Gültigkeit | E1 | mittel | Disposition | DISPO |
-| SAP | SAP-E06 | MARC-ERSA | MAABC ungültig (D, a) | MAABC | DOMAIN | Gültigkeit | E1 | mittel | Disposition | DISPO |
-| SAP | SAP-E07 | MARC-ERSA | MMSTA ungültig (1, XX) | MMSTA | DOMAIN | Gültigkeit | E1 | mittel | Disposition | MDM |
-| SAP | SAP-E08 | MARC-ERSA | DISMM=PD auf klassischem Bestellpunkt-Teil | DISMM | LOGIC | Konsistenz | E1 | mittel | Disposition | DISPO |
-| SAP | SAP-E09 | MARC-ERSA | Fachliche Dublette (gleicher Kurztext/EAN) | MATNR, MAKTX, EAN | DUP | Eindeutigkeit | E2 | hoch | Disposition (Kapital) | DISPO |
-| SAP | SAP-E10 | MARC-ERSA | Auslauf (LVORM/MMSTA) vs. hoher Meldebestand | LVORM, MINBE | LOGIC | Konsistenz | E2 | mittel | Disposition | DISPO |
-| SAP | SAP-E11 | MARC-ERSA | HERKL Schreibvarianten (nl/Netherlands) | HERKL | FORMAT | Konsistenz | E1 | hoch | Zoll | LOGISTIK |
 | SAP | SAP-M01 | MARA | MATNR in MARC ohne MARA (oder umgekehrt) | MATNR | REF | Vollständigkeit | E2 | hoch | alle | MDM |
 | SAP | SAP-M02 | MARA | MAKTX/MTART/MATKL weicht von MARC ab | MAKTX, MTART, MATKL | SYNC/LOGIC | Konsistenz | E2 | hoch | Sync CRM | MDM |
 | SAP | SAP-M03 | MARA | SPART passt nicht zu MATKL/EXTWG | SPART, MATKL | MASTER | Konsistenz | E2 | mittel | Controlling, Produkt | PRODUKT |
@@ -65,6 +115,19 @@ df = pd.read_csv("FEHLERKLASSIFIZIERUNG.csv", sep=";", encoding="utf-8")
 | SAP | SAP-X06 | Cross (SAP→CRM) | SAP aktiv, Katalog INACTIVE / fehlend | Status | SYNC | Konsistenz | E3 | hoch | Marketing | PRODUKT |
 | SAP | SAP-X07 | Cross (SF↔HS) | Preis SF ≠ HS | Pricebooks | SYNC | Konsistenz | E3 | hoch | Vertrieb (Lena) | VERTRIEB |
 | SAP | SAP-X08 | Cross (SAP→CRM) | SF ProductCount ≠ 100 SAP FERT | Abdeckung | SYNC | Vollständigkeit | E3 | hoch | alle | MDM |
+| HubSpot | HS-B01 | Price Books | Währung uneinheitlich (EURO vs EUR) | hs_supported_currencies | DOMAIN | Konsistenz | E1 | mittel | Pricing, Vertrieb | VERTRIEB |
+| HubSpot | HS-B02 | Price Books | archived=True aber hs_status=ACTIVE | archived, hs_status | LOGIC | Konsistenz | E1 | hoch | Katalog, Vertrieb | MARKETING |
+| HubSpot | HS-B03 | Price Books | hs_count_of_included_products weicht von tatsächlicher Item-Anzahl ab | hs_count_of_included_products | LOGIC | Genauigkeit | E2 | mittel | Pricing | MARKETING |
+| HubSpot | HS-H01 | Cross (HS intern) | Products.price ≠ Standard-Preisbuch-Item | price, hs_price_eur | SYNC | Konsistenz | E2 | hoch | Vertrieb, Katalog | VERTRIEB |
+| HubSpot | HS-H02 | Cross (HS intern) | Händlerpreis > Listenpreis | hs_price_eur | LOGIC | Genauigkeit | E2 | hoch | Vertrieb | VERTRIEB |
+| HubSpot | HS-H03 | Cross (HS intern) | Product INACTIVE, Items noch ACTIVE | hs_status | LOGIC | Konsistenz | E2 | mittel–hoch | Marketing | MARKETING |
+| HubSpot | HS-H04 | Cross (HS intern) | Name Product ≠ Name Price Book Item | name, hs_name | SYNC | Konsistenz | E2 | niedrig–mittel | Katalog | MARKETING |
+| HubSpot | HS-I01 | Price Book Items | price_book_id zeigt auf unbekanntes Preisbuch | price_book_id | REF | Vollständigkeit | E2 | hoch | Pricing | VERTRIEB |
+| HubSpot | HS-I02 | Price Book Items | hs_associated_product_id orphan (kein Product) | hs_associated_product_id | REF | Vollständigkeit | E2 | hoch | Katalog, Pricing | MDM |
+| HubSpot | HS-I03 | Price Book Items | hs_price_eur negativ oder als Text formatiert | hs_price_eur | FORMAT/LOGIC | Genauigkeit | E1 | hoch | Vertrieb | VERTRIEB |
+| HubSpot | HS-I04 | Price Book Items | hs_status außerhalb ACTIVE/INACTIVE (ARCHIVED) | hs_status | DOMAIN | Gültigkeit | E1 | mittel | Pricing | MARKETING |
+| HubSpot | HS-I05 | Price Book Items | hs_sku weicht vom zugehörigen Product ab | hs_sku | SYNC | Konsistenz | E2 | hoch | Sync, Vertrieb | MDM |
+| HubSpot | HS-I06 | Price Book Items | Produkt hat nicht beide Preisbücher (Standard + Händler) | price_book_id | REF | Vollständigkeit | E2 | hoch | Vertrieb (Lena) | VERTRIEB |
 | HubSpot | HS-P01 | Products | hs_object_id mit Prefix HS- statt rein numerisch | hs_object_id | FORMAT | Gültigkeit | E1 | mittel | Sync, Integrationen | MDM |
 | HubSpot | HS-P02 | Products | name fehlt | name | KEY | Vollständigkeit | E1 | hoch | Marketing, Katalog | MARKETING |
 | HubSpot | HS-P03 | Products | Leading/Trailing/Doppel-Leerzeichen im Namen | name | FORMAT | Konsistenz | E1 | niedrig | Marketing | MARKETING |
@@ -91,19 +154,6 @@ df = pd.read_csv("FEHLERKLASSIFIZIERUNG.csv", sep=";", encoding="utf-8")
 | HubSpot | HS-P24 | Products | atn_sap_materialnummer fehlt | atn_sap_materialnummer | KEY | Vollständigkeit | E1 | hoch | Sync SAP | MDM |
 | HubSpot | HS-P25 | Products | atn_sap_materialnummer zu kurz / abgeschnitten | atn_sap_materialnummer | FORMAT | Gültigkeit | E1 | hoch | Sync SAP | MDM |
 | HubSpot | HS-P26 | Products | atn_herstellwerk ungültig (1050, ABC) | atn_herstellwerk | MASTER | Gültigkeit | E1 | mittel–hoch | Sync SAP, Logistik | MDM |
-| HubSpot | HS-B01 | Price Books | Währung uneinheitlich (EURO vs EUR) | hs_supported_currencies | DOMAIN | Konsistenz | E1 | mittel | Pricing, Vertrieb | VERTRIEB |
-| HubSpot | HS-B02 | Price Books | archived=True aber hs_status=ACTIVE | archived, hs_status | LOGIC | Konsistenz | E1 | hoch | Katalog, Vertrieb | MARKETING |
-| HubSpot | HS-B03 | Price Books | hs_count_of_included_products weicht von tatsächlicher Item-Anzahl ab | hs_count_of_included_products | LOGIC | Genauigkeit | E2 | mittel | Pricing | MARKETING |
-| HubSpot | HS-I01 | Price Book Items | price_book_id zeigt auf unbekanntes Preisbuch | price_book_id | REF | Vollständigkeit | E2 | hoch | Pricing | VERTRIEB |
-| HubSpot | HS-I02 | Price Book Items | hs_associated_product_id orphan (kein Product) | hs_associated_product_id | REF | Vollständigkeit | E2 | hoch | Katalog, Pricing | MDM |
-| HubSpot | HS-I03 | Price Book Items | hs_price_eur negativ oder als Text formatiert | hs_price_eur | FORMAT/LOGIC | Genauigkeit | E1 | hoch | Vertrieb | VERTRIEB |
-| HubSpot | HS-I04 | Price Book Items | hs_status außerhalb ACTIVE/INACTIVE (ARCHIVED) | hs_status | DOMAIN | Gültigkeit | E1 | mittel | Pricing | MARKETING |
-| HubSpot | HS-I05 | Price Book Items | hs_sku weicht vom zugehörigen Product ab | hs_sku | SYNC | Konsistenz | E2 | hoch | Sync, Vertrieb | MDM |
-| HubSpot | HS-I06 | Price Book Items | Produkt hat nicht beide Preisbücher (Standard + Händler) | price_book_id | REF | Vollständigkeit | E2 | hoch | Vertrieb (Lena) | VERTRIEB |
-| HubSpot | HS-H01 | Cross (HS intern) | Products.price ≠ Standard-Preisbuch-Item | price, hs_price_eur | SYNC | Konsistenz | E2 | hoch | Vertrieb, Katalog | VERTRIEB |
-| HubSpot | HS-H02 | Cross (HS intern) | Händlerpreis > Listenpreis | hs_price_eur | LOGIC | Genauigkeit | E2 | hoch | Vertrieb | VERTRIEB |
-| HubSpot | HS-H03 | Cross (HS intern) | Product INACTIVE, Items noch ACTIVE | hs_status | LOGIC | Konsistenz | E2 | mittel–hoch | Marketing | MARKETING |
-| HubSpot | HS-H04 | Cross (HS intern) | Name Product ≠ Name Price Book Item | name, hs_name | SYNC | Konsistenz | E2 | niedrig–mittel | Katalog | MARKETING |
 | HubSpot | HS-X01 | Cross (→SAP) | HubSpot-Produkt ohne / mit falscher SAP-MATNR | atn_sap_materialnummer | SYNC | Konsistenz | E3 | hoch | Sync, Produkt | MDM |
 | HubSpot | HS-X02 | Cross (→SAP) | Name weicht von SAP MAKTX ab | name | SYNC | Konsistenz | E3 | mittel | Marketing (Jonas) | MDM |
 | HubSpot | HS-X03 | Cross (→SAP) | Warengruppe weicht von SAP MATKL ab | atn_sap_warengruppe | SYNC | Konsistenz | E3 | mittel | Reporting | MDM |
@@ -112,42 +162,86 @@ df = pd.read_csv("FEHLERKLASSIFIZIERUNG.csv", sep=";", encoding="utf-8")
 | HubSpot | HS-X06 | Cross (→SF) | Listenpreis HubSpot ≠ Salesforce Standard Price Book | price / hs_price_eur | SYNC | Konsistenz | E3 | hoch | Vertrieb (Lena) | VERTRIEB |
 | HubSpot | HS-X07 | Cross (→SF) | Händlerpreis HubSpot ≠ Salesforce Händlerpreisliste | hs_price_eur | SYNC | Konsistenz | E3 | hoch | Vertrieb | VERTRIEB |
 | HubSpot | HS-X08 | Cross (→SF/SAP) | Abdeckung ≠ 100 FERT (fehlende/überzählige Produkte) | hs_sku / MATNR | SYNC | Vollständigkeit | E3 | hoch | alle | MDM |
-
-
-# Fehlerklassifizierung HubSpot
-
-**Integriert in:** [`FEHLERKLASSIFIZIERUNG.csv`](FEHLERKLASSIFIZIERUNG.csv) (gemeinsam mit SAP).  
-Owner-Codes gemäß [`OWNER_VORSCHLAG.md`](OWNER_VORSCHLAG.md).
-
-```python
-import pandas as pd
-df = pd.read_csv("FEHLERKLASSIFIZIERUNG.csv", sep=";", encoding="utf-8")
-hs = df[df["SYSTEM"] == "HubSpot"]
-```
-
-## Owner-Verteilung (HubSpot)
-
-| Owner | Rolle | typische HS-Befunde |
-|-------|-------|---------------------|
-| `MDM` | Schlüssel / Sync | SKU, MATNR, Ids, Orphans, Abdeckung |
-| `MARKETING` | Katalog / Content | name, description, URL, Status-Picklists, archived |
-| `VERTRIEB` | Preise | price, Price Books, Price Book Items, COGS, Währung |
-| `PRODUKT` | Lebenszyklus | Auslauf SAP vs. ACTIVE in HubSpot |
-
-## IDs in der CSV
-
-| Prefix | Objekt |
-|--------|--------|
-| HS-P\* | Products |
-| HS-B\* | Price Books |
-| HS-I\* | Price Book Items |
-| HS-H\* | Cross HubSpot intern |
-| HS-X\* | Cross → SAP / Salesforce |
-
-## Rohdaten-Hinweise
-
-- Products: 105 Zeilen (Erwartung ~100)
-- SKU-Formatbrüche + Dubletten
-- Preis als Text / 0 / negativ
-- Standard-Preisbuch: `archived=True` + `ACTIVE`; `EURO` vs `EUR`
-- Items: Orphan-Refs, `price_book_id` `91599999`, Produkte ohne beide Bücher
+| Salesforce | SF-A01 | Account | `Name` fehlt | Name | KEY | Vollständigkeit | E1 | niedrig | Service, Vertrieb | CUSTOMER |
+| Salesforce | SF-A02 | Account | `Id` unvollständig / falsches Prefix (`003` statt `001`) → Zuordnung bricht | Id | FORMAT | Gültigkeit | E1 | hoch | Sync, Service | MDM |
+| Salesforce | SF-A03 | Account | `Type`: `Kunde` vs `Customer` vs `customer` | Type | DOMAIN | Gültigkeit | E1 | mittel | Reporting | CUSTOMER |
+| Salesforce | SF-A04 | Account | `Industry`: Agriculture vs. Landwirtschaft / Agrar | Industry | DOMAIN | Konsistenz | E1 | niedrig | Reporting | CUSTOMER |
+| Salesforce | SF-A05 | Account | `BillingCountry`: Abkürzung vs. Klartext (FR / Frankreich, US / USA / United States) | BillingCountry | FORMAT | Konsistenz | E1 | mittel | Reporting, Service | CUSTOMER |
+| Salesforce | SF-A06 | Account | `BillingCity` fehlt | BillingCity | KEY | Vollständigkeit | E1 | mittel | Service | CUSTOMER |
+| Salesforce | SF-A07 | Account | `NumberOfEmployees` Extremwert (5.000.000), negativ oder nicht numerisch (`viele`) | NumberOfEmployees | LOGIC | Genauigkeit | E1 | niedrig | Reporting | CUSTOMER |
+| Salesforce | SF-A08 | Account | Website-Formatbruch (`http//…`) | Website | FORMAT | Gültigkeit | E1 | niedrig | Marketing | CUSTOMER |
+| Salesforce | SF-A09 | Account | Fachliche Dublette (gleicher Name mehrfach) | Name | DUP | Eindeutigkeit | E2 | hoch | Customer Success | CUSTOMER |
+| Salesforce | SF-A10 | Account | Marktregion widerspricht Land (z. B. United States → Benelux) | ATN_Marktregion__c, BillingCountry | LOGIC | Konsistenz | E1 | hoch | Reporting, Vertrieb | CUSTOMER |
+| Salesforce | SF-A12 | Account | `OwnerId` fehlt / falsches Prefix | OwnerId | FORMAT | Gültigkeit | E1 | mittel | Governance | SERVICE |
+| Salesforce | SF-A13 | Account | `Name` vollständig Großbuchstaben | Name | FORMAT | Konsistenz | E1 | niedrig | Reporting | CUSTOMER |
+| Salesforce | SF-A14 | Account | `BillingCity` Format „Stadt, Bundesstaat“ (z. B. `Lubbock, TX`) | BillingCity | FORMAT | Konsistenz | E1 | mittel | Reporting | CUSTOMER |
+| Salesforce | SF-A15 | Account | `BillingStreet` fehlt | BillingStreet | KEY | Vollständigkeit | E1 | mittel | Service, Logistik | CUSTOMER |
+| Salesforce | SF-A16 | Account | `BillingPostalCode` Länge uneinheitlich / Buchstaben (`ABCDE`) | BillingPostalCode | FORMAT | Gültigkeit | E1 | mittel | Logistik, Service | CUSTOMER |
+| Salesforce | SF-A17 | Account | `Phone`: Vorwahl inkonsistent, Prefix `tel:`, stark unterschiedliche Länge → nicht erreichbar | Phone | FORMAT | Gültigkeit | E1 | hoch | Service | CUSTOMER |
+| Salesforce | SF-B01 | Pricebook2 | Beide Preisbücher `IsStandard=True` | IsStandard | LOGIC | Konsistenz | E1 | hoch | Pricing | VERTRIEB |
+| Salesforce | SF-B02 | Pricebook2 | Währung uneinheitlich (`EURO` vs `EUR`) | CurrencyIsoCode | DOMAIN | Konsistenz | E1 | mittel | Pricing | VERTRIEB |
+| Salesforce | SF-B03 | Pricebook2 | `CreatedDate` Formatbruch | CreatedDate | FORMAT | Gültigkeit | E1 | niedrig | Reporting | VERTRIEB |
+| Salesforce | SF-C01 | Contact | `Id` falsches Prefix (`001` statt `003`) | Id | FORMAT | Gültigkeit | E1 | hoch | Sync, Service | MDM |
+| Salesforce | SF-C02 | Contact | `AccountId` fehlt oder orphan → keine Zuordnung zum Account | AccountId | REF | Vollständigkeit | E2 | hoch | Service | CUSTOMER |
+| Salesforce | SF-C03 | Contact | Vor-/Zuname fehlt oder nicht getrennt (`FirstName` / `LastName`) | FirstName, LastName | KEY | Vollständigkeit | E1 | niedrig | Service | CUSTOMER |
+| Salesforce | SF-C04 | Contact | E-Mail ungültig (ohne `@`, `@@`) | Email | FORMAT | Gültigkeit | E1 | hoch | Service, Marketing | CUSTOMER |
+| Salesforce | SF-C05 | Contact | `Salutation` Mix DE/EN | Salutation | DOMAIN | Konsistenz | E1 | niedrig | Reporting | CUSTOMER |
+| Salesforce | SF-C06 | Contact | `MailingCountry` weicht vom Account-Land ab | MailingCountry | LOGIC | Konsistenz | E2 | mittel | Service | CUSTOMER |
+| Salesforce | SF-C07 | Contact | Anrede vs. Vorname unplausibel | Salutation, FirstName | LOGIC | Genauigkeit | E1 | niedrig | Service | CUSTOMER |
+| Salesforce | SF-E01 | PricebookEntry | `Product2Id` orphan | Product2Id | REF | Vollständigkeit | E2 | hoch | Pricing, Vertrieb | MDM |
+| Salesforce | SF-E02 | PricebookEntry | `Pricebook2Id` orphan | Pricebook2Id | REF | Vollständigkeit | E2 | hoch | Pricing | VERTRIEB |
+| Salesforce | SF-E03 | PricebookEntry | Produkt hat nicht beide Preisbücher | Pricebook2Id | REF | Vollständigkeit | E2 | hoch | Vertrieb (Lena) | VERTRIEB |
+| Salesforce | SF-E04 | PricebookEntry | `CurrencyIsoCode` ≠ EUR (z. B. USD) | CurrencyIsoCode | DOMAIN | Konsistenz | E1 | mittel | Pricing | VERTRIEB |
+| Salesforce | SF-E05 | PricebookEntry | `REF_ProductCode` Case-Abweichung (`ahx-120`) | REF_ProductCode | FORMAT | Konsistenz | E2 | niedrig | Vertrieb | MDM |
+| Salesforce | SF-E06 | PricebookEntry | Entry aktiv, Product inaktiv/archiviert | IsActive | LOGIC | Konsistenz | E2 | mittel | Vertrieb | VERTRIEB |
+| Salesforce | SF-E07 | PricebookEntry | Händlerpreis > Listenpreis | UnitPrice | LOGIC | Genauigkeit | E2 | hoch | Vertrieb | VERTRIEB |
+| Salesforce | SF-H01 | Cross (SF intern) | Product2 vs. PricebookEntry Preislogik | UnitPrice | SYNC | Konsistenz | E2 | hoch | Vertrieb | VERTRIEB |
+| Salesforce | SF-H02 | Cross (SF intern) | Asset.Product2Id nicht in Product2 | Product2Id | REF | Vollständigkeit | E2 | hoch | Service | MDM |
+| Salesforce | SF-H03 | Cross (SF intern) | Contact↔Account; REF_AccountName weicht ab | AccountId, REF_AccountName | SYNC | Konsistenz | E2 | mittel | Customer Success | CUSTOMER |
+| Salesforce | SF-P01 | Product2 | `Id` fehlt | Id | KEY | Vollständigkeit | E1 | hoch | Sync, alle | MDM |
+| Salesforce | SF-P02 | Product2 | `Id` falsches Objekt-Prefix (nicht `01t`) oder Länge ≠ 18 | Id | FORMAT | Gültigkeit | E1 | hoch | Sync | MDM |
+| Salesforce | SF-P03 | Product2 | `Name` fehlt | Name | KEY | Vollständigkeit | E1 | hoch | Vertrieb, Katalog | PRODUKT |
+| Salesforce | SF-P04 | Product2 | Spaces / ALL CAPS / Abkürzung `Autonom.` im Namen | Name | FORMAT | Konsistenz | E1 | niedrig | Vertrieb, Marketing | PRODUKT |
+| Salesforce | SF-P05 | Product2 | `ProductCode` fehlt oder mit Leerzeichen (`AHX 120`) | ProductCode | FORMAT | Gültigkeit | E1 | hoch | Vertrieb | MDM |
+| Salesforce | SF-P06 | Product2 | Doppelter `ProductCode` | ProductCode | DUP | Eindeutigkeit | E1 | hoch | Vertrieb | MDM |
+| Salesforce | SF-P07 | Product2 | `StockKeepingUnit` nicht `ATN-######` | StockKeepingUnit | FORMAT | Gültigkeit | E1 | hoch | Sync | MDM |
+| Salesforce | SF-P08 | Product2 | Doppelte SKU | StockKeepingUnit | DUP | Eindeutigkeit | E1 | hoch | Sync, Vertrieb | MDM |
+| Salesforce | SF-P09 | Product2 | `Description` fehlt / Placeholder / abgeschnitten | Description | FORMAT | Genauigkeit | E1 | mittel | Vertrieb, Marketing | PRODUKT |
+| Salesforce | SF-P10 | Product2 | `IsActive` außerhalb True/False (`wahr`, `1`, `Ja`) | IsActive | DOMAIN | Gültigkeit | E1 | hoch | Vertrieb | VERTRIEB |
+| Salesforce | SF-P11 | Product2 | `IsArchived=True` und gleichzeitig aktiv | IsArchived, IsActive | LOGIC | Konsistenz | E1 | hoch | Vertrieb, Marketing | PRODUKT |
+| Salesforce | SF-P12 | Product2 | `QuantityUnitOfMeasure` uneinheitlich (`Stueck`, `ST`, `pcs`) | QuantityUnitOfMeasure | DOMAIN | Konsistenz | E1 | mittel | Disposition, Reporting | MDM |
+| Salesforce | SF-P13 | Product2 | `Family` Schreibvarianten / Trailing Space | Family | FORMAT | Konsistenz | E1 | niedrig | Reporting | PRODUKT |
+| Salesforce | SF-P14 | Product2 | `ATN_SAP_Materialnummer__c` fehlt | ATN_SAP_Materialnummer__c | KEY | Vollständigkeit | E1 | hoch | Sync SAP | MDM |
+| Salesforce | SF-P15 | Product2 | SAP-Materialnummer ungültig (`10000000AB`, `M…`) | ATN_SAP_Materialnummer__c | FORMAT | Gültigkeit | E1 | hoch | Sync SAP | MDM |
+| Salesforce | SF-P16 | Product2 | `ATN_Herstellwerk__c` ungültig (`ABC`, `1050`) | ATN_Herstellwerk__c | MASTER | Gültigkeit | E1 | mittel | Sync, Logistik | MDM |
+| Salesforce | SF-P17 | Product2 | `CreatedDate` nicht ISO (`DD.MM.YYYY`) | CreatedDate | FORMAT | Gültigkeit | E1 | niedrig | Reporting | MDM |
+| Salesforce | SF-P18 | Product2 | `CreatedDate` in der Zukunft (z. B. 2028) | CreatedDate | LOGIC | Genauigkeit | E1 | mittel | Governance | MDM |
+| Salesforce | SF-P19 | Product2 | `OwnerId` fehlt | OwnerId | KEY | Vollständigkeit | E1 | niedrig | Governance | VERTRIEB |
+| Salesforce | SF-S01 | Asset | `Id` falsches Prefix (nicht `02i`) | Id | FORMAT | Gültigkeit | E1 | hoch | Service | MDM |
+| Salesforce | SF-S02 | Asset | `SerialNumber` fehlt | SerialNumber | KEY | Vollständigkeit | E1 | hoch | Service | SERVICE |
+| Salesforce | SF-S03 | Asset | SerialNumber Formatbruch / Case | SerialNumber | FORMAT | Gültigkeit | E1 | hoch | Service | SERVICE |
+| Salesforce | SF-S04 | Asset | Doppelte SerialNumber | SerialNumber | DUP | Eindeutigkeit | E1 | hoch | Service | SERVICE |
+| Salesforce | SF-S05 | Asset | Name enthält andere Serial als Feld | Name, SerialNumber | LOGIC | Konsistenz | E1 | mittel | Service (Carla) | SERVICE |
+| Salesforce | SF-S06 | Asset | `Status` außerhalb Domäne (`Aktiv`, `Active`, `installed`) | Status | DOMAIN | Gültigkeit | E1 | mittel | Service | SERVICE |
+| Salesforce | SF-S07 | Asset | Datumsreihenfolge verletzt: nicht Purchase ≤ Install ≤ UsageEnd | PurchaseDate, InstallDate, UsageEndDate | LOGIC | Genauigkeit | E1 | hoch | Service | SERVICE |
+| Salesforce | SF-S08 | Asset | `AccountId` / `ContactId` / `Product2Id` orphan | AccountId, ContactId, Product2Id | REF | Vollständigkeit | E2 | hoch | Service (Carla) | SERVICE |
+| Salesforce | SF-S09 | Asset | `PurchaseDate` / `InstallDate` / `UsageEndDate` fehlt | PurchaseDate, InstallDate, UsageEndDate | KEY | Vollständigkeit | E1 | hoch | Service | SERVICE |
+| Salesforce | SF-S10 | Asset | Einzelprüfung: InstallDate < PurchaseDate | InstallDate, PurchaseDate | LOGIC | Genauigkeit | E1 | hoch | Service | SERVICE |
+| Salesforce | SF-S11 | Asset | Standort fehlt (`ATN_Standort__c`) | ATN_Standort__c | KEY | Vollständigkeit | E1 | mittel | Service | SERVICE |
+| Salesforce | SF-W01 | WorkOrder | `Status` Schreibvarianten (`closed`, `Open`, `Abgeschlossen`) | Status | DOMAIN | Gültigkeit | E1 | mittel | Service | SERVICE |
+| Salesforce | SF-W02 | WorkOrder | `Priority` Mix DE/EN / außerhalb Domäne (`hoch`, `Urgent` vs `Low`) | Priority | DOMAIN | Gültigkeit | E1 | hoch | Service | SERVICE |
+| Salesforce | SF-W03 | WorkOrder | `ATN_Wartungsart__c` Varianten (`Wartung`, `reparatur`) | ATN_Wartungsart__c | DOMAIN | Konsistenz | E1 | mittel | Service | SERVICE |
+| Salesforce | SF-W04 | WorkOrder | Garantiefall mit Kosten > 0 | ATN_Wartungsart__c, ATN_Wartungskosten__c | LOGIC | Genauigkeit | E1 | hoch | Service, Controlling | SERVICE |
+| Salesforce | SF-W05 | WorkOrder | `EndDate` < `StartDate` | StartDate, EndDate | LOGIC | Genauigkeit | E1 | hoch | Service | SERVICE |
+| Salesforce | SF-W06 | WorkOrder | `AssetId` orphan | AssetId | REF | Vollständigkeit | E2 | hoch | Service (Carla) | SERVICE |
+| Salesforce | SF-W07 | WorkOrder | Account/Contact/Asset inkonsistent | AccountId, ContactId, AssetId | LOGIC | Konsistenz | E2 | hoch | Service | SERVICE |
+| Salesforce | SF-W08 | WorkOrder | Tippfehler Ersatzteil (`Dichtungsastz`) | ATN_Ersatzteile_verwendet__c | FORMAT | Genauigkeit | E1 | niedrig | Disposition, Service | SERVICE |
+| Salesforce | SF-W09 | WorkOrder | `CreatedDate` nach `EndDate` | CreatedDate, EndDate | LOGIC | Genauigkeit | E1 | mittel | Governance | SERVICE |
+| Salesforce | SF-W10 | WorkOrder | `WorkOrderNumber` uneinheitlich (`wo-000055`, `WO-93` statt `WO-######`) | WorkOrderNumber | FORMAT | Gültigkeit | E1 | hoch | Service | SERVICE |
+| Salesforce | SF-X01 | Cross (→SAP) | Product ohne / falsche SAP-MATNR | ATN_SAP_Materialnummer__c | SYNC | Konsistenz | E3 | hoch | Sync | MDM |
+| Salesforce | SF-X02 | Cross (→SAP) | Name weicht von SAP MAKTX ab | Name | SYNC | Konsistenz | E3 | mittel | Vertrieb, Marketing | MDM |
+| Salesforce | SF-X03 | Cross (→SAP) | Warengruppe / Werk weicht von SAP ab | ATN_SAP_Warengruppe__c, ATN_Herstellwerk__c | SYNC | Konsistenz | E3 | mittel | Reporting, Logistik | MDM |
+| Salesforce | SF-X04 | Cross (→SAP) | SAP Auslauf, SF noch IsActive | IsActive | SYNC | Konsistenz | E3 | hoch | Vertrieb, Marketing | PRODUKT |
+| Salesforce | SF-X05 | Cross (→HS) | Listenpreis SF ≠ HubSpot | UnitPrice / price | SYNC | Konsistenz | E3 | hoch | Vertrieb (Lena) | VERTRIEB |
+| Salesforce | SF-X06 | Cross (→HS) | Händlerpreis SF ≠ HubSpot | UnitPrice | SYNC | Konsistenz | E3 | hoch | Vertrieb | VERTRIEB |
+| Salesforce | SF-X07 | Cross (→SAP/HS) | Abdeckung ≠ 100 FERT | Product2 / MATNR | SYNC | Vollständigkeit | E3 | hoch | alle | MDM |
